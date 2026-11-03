@@ -88,6 +88,9 @@ fun deserializeSections(raw: String): List<Pair<AndroidAutoSection, Boolean>> {
         val section = AndroidAutoSection.values().find { it.id == parts[0] } ?: return@mapNotNull null
         val enabled = parts[1].toBooleanStrictOrNull() ?: true
         section to enabled
+    }.let { saved ->
+        // Sections added after the order was saved are appended instead of silently missing.
+        saved + AndroidAutoSection.values().filter { s -> saved.none { it.first == s } }.map { it to true }
     }
 }
 
