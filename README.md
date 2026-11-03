@@ -11,7 +11,9 @@
 - Only counts tracks you actually listened to (30 seconds by default, adjustable in the settings); skipped tracks are ignored
 - No duplicates: a song that is already in the playlist (same video ID, or same title and artist) is not added again
 - No Google login and no API key needed
-- Playlist: *Played in YouTube Music* / *Gehört in YouTube Music*
+- Playlist: *Played in YouTube Music* / *Gehört in YouTube Music*; after a backup restore or playlist import, an existing playlist with that name is picked up again
+- Works when YouTube Music runs in a work profile
+- The playlist can be shown as its own entry in the Android Auto menu (*Settings → Android Auto*)
 
 ## Install
 
