@@ -883,6 +883,12 @@
     <string name="yt_music_scrobble_min_listen">Hörzeit bis zur Aufnahme</string>
     <string name="yt_music_scrobble_min_listen_value">%1$d Sekunden (höchstens 90 %% des Songs)</string>
     <string name="yt_music_scrobble_sources">Aufzuzeichnende Apps</string>
+    <string name="yt_music_scrobble_max_songs">Maximale Anzahl Songs</string>
+    <string name="yt_music_scrobble_max_songs_value">%1$d Songs, die ältesten fallen zuerst weg</string>
+    <string name="yt_music_scrobble_max_songs_unlimited">Unbegrenzt</string>
+    <string name="yt_music_scrobble_clear">Playlist leeren</string>
+    <string name="yt_music_scrobble_clear_description">Entfernt alle aufgezeichneten Songs aus der Playlist</string>
+    <string name="yt_music_scrobble_clear_confirm">Alle Songs aus der Rekorder-Playlist entfernen?</string>
     <string name="yt_music_scrobble_last_activity">Letzte Aktivität</string>
     <string name="yt_music_scrobble_status_none">Noch nichts erkannt. Spiele einen Song in YouTube Music ab.</string>
     <string name="yt_music_scrobble_status_detected">Erkannt: %1$s</string>

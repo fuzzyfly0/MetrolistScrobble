@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,10 +44,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
+import com.metrolist.music.LocalDatabase
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.R
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
 import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
+import com.metrolist.music.constants.YtMusicScrobbleMaxSongsKey
+import com.metrolist.music.constants.YtMusicScrobblePlaylistIdKey
 import com.metrolist.music.constants.YtMusicScrobbleMinListenSecondsKey
 import com.metrolist.music.constants.YtMusicScrobbleSourcesKey
 import com.metrolist.music.ui.component.DefaultDialog
@@ -57,6 +61,10 @@ import com.metrolist.music.ui.utils.backToMain
 import com.metrolist.music.utils.rememberPreference
 import com.metrolist.music.ytscrobble.YtMusicListenerService
 import com.metrolist.music.ytscrobble.YtMusicScrobbler
+import com.metrolist.music.ytscrobble.clearRecorderPlaylist
+import com.metrolist.music.ytscrobble.trimRecorderPlaylist
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,6 +84,13 @@ fun YtMusicScrobbleSettings(
         key = YtMusicScrobbleMinListenSecondsKey,
         defaultValue = YtMusicListenerService.DEFAULT_MIN_LISTEN_SECONDS
     )
+    val database = LocalDatabase.current
+    val coroutineScope = rememberCoroutineScope()
+    val playlistId by rememberPreference(YtMusicScrobblePlaylistIdKey, "")
+    val (maxSongs, onMaxSongsChange) = rememberPreference(YtMusicScrobbleMaxSongsKey, 0)
+    var showMaxSongsDialog by rememberSaveable { mutableStateOf(false) }
+    var showClearDialog by rememberSaveable { mutableStateOf(false) }
+
     val (sources, onSourcesChange) = rememberPreference(
         key = YtMusicScrobbleSourcesKey,
         defaultValue = YtMusicListenerService.DEFAULT_SOURCES
@@ -153,6 +168,81 @@ fun YtMusicScrobbleSettings(
         }
     }
 
+    if (showMaxSongsDialog) {
+        var tempMax by remember { mutableIntStateOf(maxSongs) }
+
+        DefaultDialog(
+            onDismiss = { showMaxSongsDialog = false },
+            buttons = {
+                TextButton(onClick = { tempMax = 0 }) {
+                    Text(stringResource(R.string.reset))
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(onClick = { showMaxSongsDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+                TextButton(
+                    onClick = {
+                        onMaxSongsChange(tempMax)
+                        if (playlistId.isNotEmpty()) {
+                            coroutineScope.launch(Dispatchers.IO) { database.trimRecorderPlaylist(playlistId, tempMax) }
+                        }
+                        showMaxSongsDialog = false
+                    }
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            }
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.yt_music_scrobble_max_songs),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Text(
+                    text = maxSongsText(tempMax),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Slider(
+                    value = tempMax.toFloat(),
+                    onValueChange = { tempMax = (it / 10).roundToInt() * 10 },
+                    valueRange = 0f..1000f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+
+    if (showClearDialog) {
+        DefaultDialog(
+            onDismiss = { showClearDialog = false },
+            buttons = {
+                TextButton(onClick = { showClearDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch(Dispatchers.IO) { database.clearRecorderPlaylist(playlistId) }
+                        showClearDialog = false
+                    }
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            }
+        ) {
+            Text(
+                text = stringResource(R.string.yt_music_scrobble_clear_confirm),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+
     Column(
         Modifier
             .windowInsetsPadding(LocalPlayerAwareWindowInsets.current)
@@ -188,6 +278,19 @@ fun YtMusicScrobbleSettings(
                     description = { Text(stringResource(R.string.yt_music_scrobble_min_listen_value, minListenSeconds)) },
                     icon = painterResource(R.drawable.timer),
                     onClick = { showMinListenDialog = true }
+                ),
+                Material3SettingsItem(
+                    title = { Text(stringResource(R.string.yt_music_scrobble_max_songs)) },
+                    description = { Text(maxSongsText(maxSongs)) },
+                    icon = painterResource(R.drawable.queue_music),
+                    onClick = { showMaxSongsDialog = true }
+                ),
+                Material3SettingsItem(
+                    title = { Text(stringResource(R.string.yt_music_scrobble_clear)) },
+                    description = { Text(stringResource(R.string.yt_music_scrobble_clear_description)) },
+                    icon = painterResource(R.drawable.delete_history),
+                    enabled = playlistId.isNotEmpty(),
+                    onClick = { showClearDialog = true }
                 ),
                 Material3SettingsItem(
                     title = { Text(stringResource(R.string.yt_music_scrobble_access)) },
@@ -261,3 +364,8 @@ fun YtMusicScrobbleSettings(
         }
     )
 }
+
+@Composable
+private fun maxSongsText(maxSongs: Int) =
+    if (maxSongs > 0) stringResource(R.string.yt_music_scrobble_max_songs_value, maxSongs)
+    else stringResource(R.string.yt_music_scrobble_max_songs_unlimited)

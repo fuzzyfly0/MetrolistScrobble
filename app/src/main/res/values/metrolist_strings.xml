@@ -1004,6 +1004,12 @@
     <string name="yt_music_scrobble_min_listen">Listen time before adding</string>
     <string name="yt_music_scrobble_min_listen_value">%1$d seconds (at most 90 %% of the song)</string>
     <string name="yt_music_scrobble_sources">Apps to record</string>
+    <string name="yt_music_scrobble_max_songs">Maximum songs in playlist</string>
+    <string name="yt_music_scrobble_max_songs_value">%1$d songs, the oldest are removed first</string>
+    <string name="yt_music_scrobble_max_songs_unlimited">Unlimited</string>
+    <string name="yt_music_scrobble_clear">Clear playlist</string>
+    <string name="yt_music_scrobble_clear_description">Removes all recorded songs from the playlist</string>
+    <string name="yt_music_scrobble_clear_confirm">Remove all songs from the recorder playlist?</string>
     <string name="yt_music_scrobble_last_activity">Last activity</string>
     <string name="yt_music_scrobble_status_none">Nothing detected yet. Play a song in YouTube Music.</string>
     <string name="yt_music_scrobble_status_detected">Detected: %1$s</string>

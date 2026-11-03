@@ -23,3 +23,7 @@ suspend fun MusicDatabase.trimRecorderPlaylist(playlistId: String, maxSongs: Int
         }
     }
 }
+
+suspend fun MusicDatabase.clearRecorderPlaylist(playlistId: String) {
+    withTransaction { clearPlaylist(playlistId) }
+}
