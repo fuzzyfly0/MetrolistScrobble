@@ -5,17 +5,21 @@
 
 package com.metrolist.music.ytscrobble
 
+import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
 import android.media.MediaMetadata
 import android.media.session.MediaController
+import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.os.BundleCompat
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
 import com.metrolist.music.utils.dataStore
 import dagger.hilt.android.AndroidEntryPoint
@@ -74,6 +78,28 @@ class YtMusicListenerService : NotificationListenerService() {
         attach(null)
     }
 
+    // Media sessions of apps in another profile (e.g. a work profile) are not returned by
+    // getActiveSessions, but their media notifications still reach this listener.
+    override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        if (sbn?.packageName != YT_MUSIC_PACKAGE) return
+        val token = BundleCompat.getParcelable(
+            sbn.notification.extras,
+            Notification.EXTRA_MEDIA_SESSION,
+            MediaSession.Token::class.java,
+        )
+        if (token != null && token == controller?.sessionToken) return
+        val fromToken = token?.let { runCatching { MediaController(this, it) }.getOrNull() }
+        if (fromToken?.metadata != null) {
+            attach(fromToken)
+        } else if (controller == null) {
+            onNotificationFallback(sbn)
+        }
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        if (sbn?.packageName == YT_MUSIC_PACKAGE && controller == null) pause()
+    }
+
     override fun onDestroy() {
         onListenerDisconnected()
         scope.cancel()
@@ -93,15 +119,33 @@ class YtMusicListenerService : NotificationListenerService() {
     }
 
     private fun onMetadata(metadata: MediaMetadata?) {
-        val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)?.takeIf { it.isNotBlank() }
-        val artist = (metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
-            ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST))?.takeIf { it.isNotBlank() }
-        if (title == null || artist == null) return
+        onTrack(
+            title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE),
+            artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+                ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST),
+            durationMs = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L,
+        )
+    }
+
+    // Without a usable session, the notification text is the only source: title and artist,
+    // no duration, and "ongoing" as the playing state (YT Music makes it dismissible on pause).
+    private fun onNotificationFallback(sbn: StatusBarNotification) {
+        val extras = sbn.notification.extras
+        onTrack(
+            title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
+            artist = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.substringBefore(" • "),
+            durationMs = 0L,
+        )
+        if (sbn.isOngoing) resume() else pause()
+    }
+
+    private fun onTrack(title: String?, artist: String?, durationMs: Long) {
+        if (title.isNullOrBlank() || artist.isNullOrBlank()) return
         if (tracker.title == title && tracker.artist == artist) return
 
         val wasPlaying = tracker.playingSince != null
         pause()
-        tracker.reset(title, artist, metadata.getLong(MediaMetadata.METADATA_KEY_DURATION))
+        tracker.reset(title, artist, durationMs)
         scope.launch { scrobbler.report(YtMusicScrobbler.Status.DETECTED, title, artist) }
         if (wasPlaying) resume()
     }
