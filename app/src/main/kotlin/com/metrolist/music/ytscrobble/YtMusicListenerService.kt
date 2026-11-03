@@ -22,6 +22,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.os.BundleCompat
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
 import com.metrolist.music.constants.YtMusicScrobbleMinListenSecondsKey
+import com.metrolist.music.constants.YtMusicScrobbleSourcesKey
 import com.metrolist.music.utils.dataStore
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -36,8 +37,8 @@ import timber.log.Timber
 import javax.inject.Inject
 
 /**
- * Watches the YouTube Music app's media session and hands every track that was actually
- * listened to (not skipped) to [YtMusicScrobbler].
+ * Watches the media session of the enabled music apps (YouTube Music by default) and hands
+ * every track that was actually listened to (not skipped) to [YtMusicScrobbler].
  */
 @AndroidEntryPoint
 class YtMusicListenerService : NotificationListenerService() {
@@ -48,10 +49,11 @@ class YtMusicListenerService : NotificationListenerService() {
     private var sessionManager: MediaSessionManager? = null
     private var controller: MediaController? = null
     private val tracker = PlayTracker()
+    private var sources = DEFAULT_SOURCES
 
     private val sessionsListener =
         MediaSessionManager.OnActiveSessionsChangedListener { controllers ->
-            attach(controllers?.firstOrNull { it.packageName == YT_MUSIC_PACKAGE })
+            attach(pickController(controllers.orEmpty()))
         }
 
     private val controllerCallback = object : MediaController.Callback() {
@@ -72,6 +74,16 @@ class YtMusicListenerService : NotificationListenerService() {
                 .distinctUntilChanged()
                 .collect { tracker.minListenMs = it * 1000L }
         }
+        scope.launch(Dispatchers.Main) {
+            dataStore.data
+                .map { it[YtMusicScrobbleSourcesKey] ?: DEFAULT_SOURCES }
+                .distinctUntilChanged()
+                .collect {
+                    sources = it
+                    if (controller != null && controller?.packageName !in it) attach(null)
+                    refreshSessions()
+                }
+        }
     }
 
     override fun onListenerConnected() {
@@ -80,11 +92,28 @@ class YtMusicListenerService : NotificationListenerService() {
         try {
             manager.addOnActiveSessionsChangedListener(sessionsListener, component, handler)
             sessionManager = manager
-            attach(manager.getActiveSessions(component).firstOrNull { it.packageName == YT_MUSIC_PACKAGE })
+            refreshSessions()
         } catch (e: SecurityException) {
             Timber.w(e, "Notification access missing for YT Music listener")
         }
     }
+
+    private fun refreshSessions() {
+        val manager = sessionManager ?: return
+        val component = ComponentName(this, YtMusicListenerService::class.java)
+        runCatching { manager.getActiveSessions(component) }
+            .onSuccess { attach(pickController(it)) }
+    }
+
+    // Prefers the enabled app that is playing right now, then the one already followed.
+    private fun pickController(controllers: List<MediaController>): MediaController? {
+        val enabled = controllers.filter { it.packageName in sources }
+        return enabled.firstOrNull { it.isPlaying() }
+            ?: enabled.firstOrNull { it.sessionToken == controller?.sessionToken }
+            ?: enabled.firstOrNull()
+    }
+
+    private fun MediaController.isPlaying() = playbackState?.state == PlaybackState.STATE_PLAYING
 
     override fun onListenerDisconnected() {
         sessionManager?.removeOnActiveSessionsChangedListener(sessionsListener)
@@ -95,7 +124,7 @@ class YtMusicListenerService : NotificationListenerService() {
     // Media sessions of apps in another profile (e.g. a work profile) are not returned by
     // getActiveSessions, but their media notifications still reach this listener.
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        if (sbn?.packageName != YT_MUSIC_PACKAGE) return
+        if (sbn == null || sbn.packageName !in sources) return
         val token = BundleCompat.getParcelable(
             sbn.notification.extras,
             Notification.EXTRA_MEDIA_SESSION,
@@ -103,6 +132,7 @@ class YtMusicListenerService : NotificationListenerService() {
         )
         if (token != null && token == controller?.sessionToken) return
         val fromToken = token?.let { runCatching { MediaController(this, it) }.getOrNull() }
+        if (controller?.isPlaying() == true && fromToken?.isPlaying() != true) return
         if (fromToken?.metadata != null) {
             attach(fromToken)
         } else if (controller == null) {
@@ -111,7 +141,7 @@ class YtMusicListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn?.packageName == YT_MUSIC_PACKAGE && controller == null) pause()
+        if (sbn?.packageName in sources && controller == null) pause()
     }
 
     override fun onDestroy() {
@@ -142,7 +172,7 @@ class YtMusicListenerService : NotificationListenerService() {
     }
 
     // Without a usable session, the notification text is the only source: title and artist,
-    // no duration, and "ongoing" as the playing state (YT Music makes it dismissible on pause).
+    // no duration, and "ongoing" as the playing state (players make it dismissible on pause).
     private fun onNotificationFallback(sbn: StatusBarNotification) {
         val extras = sbn.notification.extras
         onTrack(
@@ -222,6 +252,19 @@ class YtMusicListenerService : NotificationListenerService() {
 
     companion object {
         const val YT_MUSIC_PACKAGE = "com.google.android.apps.youtube.music"
+
+        // Music apps that can be recorded, with their display names. The regular YouTube app
+        // is left out on purpose: most of what plays there is not music.
+        val SOURCES = linkedMapOf(
+            YT_MUSIC_PACKAGE to "YouTube Music",
+            "com.spotify.music" to "Spotify",
+            "com.apple.android.music" to "Apple Music",
+            "com.amazon.mp3" to "Amazon Music",
+            "deezer.android.app" to "Deezer",
+            "com.aspiro.tidal" to "TIDAL",
+            "com.soundcloud.android" to "SoundCloud",
+        )
+        val DEFAULT_SOURCES = setOf(YT_MUSIC_PACKAGE)
         const val DEFAULT_MIN_LISTEN_SECONDS = 30
 
         fun hasNotificationAccess(context: Context) =

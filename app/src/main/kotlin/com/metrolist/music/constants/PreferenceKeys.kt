@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
@@ -216,6 +217,7 @@ val YtMusicScrobbleEnabledKey = booleanPreferencesKey("ytMusicScrobbleEnabled")
 val YtMusicScrobblePlaylistIdKey = stringPreferencesKey("ytMusicScrobblePlaylistId")
 val YtMusicScrobbleLastStatusKey = stringPreferencesKey("ytMusicScrobbleLastStatus")
 val YtMusicScrobbleMinListenSecondsKey = intPreferencesKey("ytMusicScrobbleMinListenSeconds")
+val YtMusicScrobbleSourcesKey = stringSetPreferencesKey("ytMusicScrobbleSources")
 
 val ChipSortTypeKey = stringPreferencesKey("chipSortType")
 val SongSortTypeKey = stringPreferencesKey("songSortType")
