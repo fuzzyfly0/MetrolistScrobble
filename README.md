@@ -13,6 +13,8 @@
 - No Google login and no API key needed
 - Playlist: *Played in YouTube Music* / *Gehört in YouTube Music*; after a backup restore or playlist import, an existing playlist with that name is picked up again
 - Works when YouTube Music runs in a work profile
+- Optionally records other music apps too (Spotify, Apple Music, Amazon Music, Deezer, TIDAL, SoundCloud); the regular YouTube app is never recorded
+- Optional maximum playlist size: once it is reached, the oldest songs are removed first; the playlist can also be cleared from the settings
 - The playlist can be shown as its own entry in the Android Auto menu (*Settings → Android Auto*)
 
 ## Install
