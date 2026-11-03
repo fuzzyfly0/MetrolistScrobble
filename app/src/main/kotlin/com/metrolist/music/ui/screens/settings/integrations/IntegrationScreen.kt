@@ -52,6 +52,13 @@ fun IntegrationScreen(
                     onClick = {
                         navController.navigate("settings/integrations/lastfm")
                     }
+                ),
+                IntegrationCardItem(
+                    icon = painterResource(R.drawable.queue_music),
+                    title = { Text(stringResource(R.string.yt_music_scrobble_integration)) },
+                    onClick = {
+                        navController.navigate("settings/integrations/yt_music_scrobble")
+                    }
                 )
             )
         )
