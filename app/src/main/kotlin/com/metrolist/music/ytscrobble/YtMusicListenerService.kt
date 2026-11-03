@@ -21,12 +21,16 @@ import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.os.BundleCompat
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
+import com.metrolist.music.constants.YtMusicScrobbleMinListenSecondsKey
 import com.metrolist.music.utils.dataStore
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -59,6 +63,16 @@ class YtMusicListenerService : NotificationListenerService() {
     }
 
     private val thresholdCheck = Runnable { checkThreshold() }
+
+    override fun onCreate() {
+        super.onCreate()
+        scope.launch(Dispatchers.Main) {
+            dataStore.data
+                .map { it[YtMusicScrobbleMinListenSecondsKey] ?: DEFAULT_MIN_LISTEN_SECONDS }
+                .distinctUntilChanged()
+                .collect { tracker.minListenMs = it * 1000L }
+        }
+    }
 
     override fun onListenerConnected() {
         val manager = getSystemService(MediaSessionManager::class.java) ?: return
@@ -190,10 +204,11 @@ class YtMusicListenerService : NotificationListenerService() {
         var playedMs = 0L
         var playingSince: Long? = null
         var scrobbled = false
+        var minListenMs = DEFAULT_MIN_LISTEN_SECONDS * 1000L
 
-        // Half the track, capped at 30 seconds, so skipped tracks never count.
+        // Capped at 90 % of the track so that tracks shorter than the setting can still count.
         val thresholdMs: Long
-            get() = if (durationMs > 0) minOf(durationMs / 2, MAX_THRESHOLD_MS) else MAX_THRESHOLD_MS
+            get() = if (durationMs > 0) minOf(minListenMs, durationMs * 9 / 10) else minListenMs
 
         fun reset(title: String, artist: String, durationMs: Long) {
             this.title = title
@@ -207,7 +222,7 @@ class YtMusicListenerService : NotificationListenerService() {
 
     companion object {
         const val YT_MUSIC_PACKAGE = "com.google.android.apps.youtube.music"
-        private const val MAX_THRESHOLD_MS = 30_000L
+        const val DEFAULT_MIN_LISTEN_SECONDS = 30
 
         fun hasNotificationAccess(context: Context) =
             NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
