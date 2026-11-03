@@ -117,3 +117,6 @@ app/src/main/cpp/coverart/
 .cortexkit
 .mcp.json
 *.har
+
+# Local release signing key (kept out of git, stored as GitHub secrets)
+/signing/
