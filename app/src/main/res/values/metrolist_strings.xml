@@ -995,5 +995,10 @@
     <string name="top_result">Top result</string>
     <string name="other">Other</string>
     <string name="yt_music_scrobble_integration">YouTube Music recorder</string>
+    <string name="yt_music_scrobble_enable">Record YouTube Music plays</string>
+    <string name="yt_music_scrobble_enable_description">Adds every song you listen to in the YouTube Music app to a playlist, without duplicates</string>
+    <string name="yt_music_scrobble_access">Notification access</string>
+    <string name="yt_music_scrobble_access_granted">Granted</string>
+    <string name="yt_music_scrobble_access_missing">Required to see what YouTube Music is playing. Tap to grant.</string>
     <string name="yt_music_scrobble_playlist_name">Played in YouTube Music</string>
 </resources>
