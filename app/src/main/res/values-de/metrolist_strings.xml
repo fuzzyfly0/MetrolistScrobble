@@ -873,4 +873,5 @@
     <string name="player_pause">Pause</string>
     <string name="top_result">Top-Ergebnis</string>
     <string name="other">Sonstiges</string>
+    <string name="yt_music_scrobble_playlist_name">Gehört in YouTube Music</string>
 </resources>
