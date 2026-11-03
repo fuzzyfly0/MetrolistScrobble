@@ -8,7 +8,7 @@
 
 **YouTube Music recorder:** records what you play in the official YouTube Music app and adds it to a local Metrolist playlist automatically.
 
-- Only counts tracks you actually listened to (half the track, max. 30 seconds); skipped tracks are ignored
+- Only counts tracks you actually listened to (30 seconds by default, adjustable in the settings); skipped tracks are ignored
 - No duplicates: a song that is already in the playlist (same video ID, or same title and artist) is not added again
 - No Google login and no API key needed
 - Playlist: *Played in YouTube Music* / *Gehört in YouTube Music*
