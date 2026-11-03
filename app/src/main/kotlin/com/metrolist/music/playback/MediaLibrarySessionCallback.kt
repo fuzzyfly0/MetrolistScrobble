@@ -66,6 +66,7 @@ import javax.inject.Inject
 import com.metrolist.music.constants.AndroidAutoSectionsOrderKey
 import com.metrolist.music.constants.AndroidAutoYouTubePlaylistsKey
 import com.metrolist.music.constants.AutoRadioQueueKey
+import com.metrolist.music.constants.YtMusicScrobblePlaylistIdKey
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.playback.queues.YouTubeQueue
 import com.metrolist.music.ui.screens.settings.AndroidAutoSection
@@ -199,7 +200,7 @@ constructor(
                         val rootItems = sections
                             .filter { (_, enabled) -> enabled }
                             .ifEmpty { listOf(AndroidAutoSection.LIKED to true) }
-                            .map { (section, _) ->
+                            .mapNotNull { (section, _) ->
                                 when (section) {
                                     AndroidAutoSection.LIKED -> browsableMediaItem(
                                         "${MusicService.PLAYLIST}/${PlaylistEntity.LIKED_PLAYLIST_ID}",
@@ -236,6 +237,16 @@ constructor(
                                         drawableUri(R.drawable.queue_music),
                                         MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS,
                                     )
+                                    AndroidAutoSection.YT_MUSIC_RECORDED ->
+                                        context.dataStore[YtMusicScrobblePlaylistIdKey]?.let { playlistId ->
+                                            browsableMediaItem(
+                                                "${MusicService.PLAYLIST}/$playlistId",
+                                                context.getString(R.string.yt_music_scrobble_playlist_name),
+                                                null,
+                                                drawableUri(R.drawable.history),
+                                                MediaMetadata.MEDIA_TYPE_PLAYLIST,
+                                            )
+                                        }
                                 }
                             }
                         if (showYoutubePlaylists) {
