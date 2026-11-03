@@ -375,6 +375,16 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".ytscrobble.YtMusicListenerService"
+            android:exported="false"
+            android:label="@string/yt_music_scrobble_integration"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>
