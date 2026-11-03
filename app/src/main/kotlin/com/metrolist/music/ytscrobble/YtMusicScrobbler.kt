@@ -11,6 +11,7 @@ import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.music.R
 import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
+import com.metrolist.music.constants.YtMusicScrobbleMaxSongsKey
 import com.metrolist.music.constants.YtMusicScrobblePlaylistIdKey
 import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.db.entities.PlaylistEntity
@@ -75,6 +76,7 @@ class YtMusicScrobbler @Inject constructor(
         database.insert(match.toMediaMetadata())
         val playlist = database.playlist(playlistId).first() ?: return Status.FAILED
         database.addSongsToPlaylist(playlist, listOf(match.id to null))
+        database.trimRecorderPlaylist(playlistId, context.dataStore.data.first()[YtMusicScrobbleMaxSongsKey] ?: 0)
         return Status.ADDED
     }
 
