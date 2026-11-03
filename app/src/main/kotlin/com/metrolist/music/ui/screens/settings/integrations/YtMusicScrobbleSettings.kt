@@ -10,6 +10,7 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -47,6 +48,7 @@ import com.metrolist.music.R
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
 import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
 import com.metrolist.music.constants.YtMusicScrobbleMinListenSecondsKey
+import com.metrolist.music.constants.YtMusicScrobbleSourcesKey
 import com.metrolist.music.ui.component.DefaultDialog
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.Material3SettingsGroup
@@ -73,6 +75,10 @@ fun YtMusicScrobbleSettings(
     val (minListenSeconds, onMinListenSecondsChange) = rememberPreference(
         key = YtMusicScrobbleMinListenSecondsKey,
         defaultValue = YtMusicListenerService.DEFAULT_MIN_LISTEN_SECONDS
+    )
+    val (sources, onSourcesChange) = rememberPreference(
+        key = YtMusicScrobbleSourcesKey,
+        defaultValue = YtMusicListenerService.DEFAULT_SOURCES
     )
     var showMinListenDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -207,6 +213,36 @@ fun YtMusicScrobbleSettings(
                     icon = painterResource(R.drawable.music_note),
                 ),
             )
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Material3SettingsGroup(
+            title = stringResource(R.string.yt_music_scrobble_sources),
+            items = YtMusicListenerService.SOURCES.map { (packageName, appName) ->
+                val checked = packageName in sources
+                val toggle = { onSourcesChange(if (checked) sources - packageName else sources + packageName) }
+                Material3SettingsItem(
+                    title = { Text(appName) },
+                    trailingContent = {
+                        Switch(
+                            checked = checked,
+                            onCheckedChange = { toggle() },
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (checked) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize),
+                                )
+                            }
+                        )
+                    },
+                    icon = painterResource(R.drawable.music_note),
+                    onClick = toggle
+                )
+            }
         )
     }
 
