@@ -212,6 +212,9 @@ val ScrobbleDelayPercentKey = floatPreferencesKey("scrobbleDelayPercent")
 val ScrobbleMinSongDurationKey = intPreferencesKey("scrobbleMinSongDuration")
 val ScrobbleDelaySecondsKey = intPreferencesKey("scrobbleDelaySeconds")
 
+val YtMusicScrobbleEnabledKey = booleanPreferencesKey("ytMusicScrobbleEnabled")
+val YtMusicScrobblePlaylistIdKey = stringPreferencesKey("ytMusicScrobblePlaylistId")
+
 val ChipSortTypeKey = stringPreferencesKey("chipSortType")
 val SongSortTypeKey = stringPreferencesKey("songSortType")
 val SongSortDescendingKey = booleanPreferencesKey("songSortDescending")
