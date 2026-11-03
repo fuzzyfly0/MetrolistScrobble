@@ -6,6 +6,7 @@
 package com.metrolist.music.ytscrobble
 
 import android.content.Context
+import android.content.res.Configuration
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.music.R
@@ -24,6 +25,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.time.LocalDateTime
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
@@ -80,6 +82,16 @@ class YtMusicScrobbler @Inject constructor(
         val storedId = context.dataStore.data.first()[YtMusicScrobblePlaylistIdKey]
         if (storedId != null && database.playlist(storedId).first() != null) return storedId
 
+        // After a backup restore or a playlist import the stored ID is gone, so pick up an
+        // existing playlist with the recorder's name (in any shipped language) instead.
+        val names = playlistNames()
+        database.playlistsByNameAsc().first()
+            .firstOrNull { it.playlist.isEditable && it.playlist.name in names }
+            ?.let { existing ->
+                context.safeDataStoreEdit { it[YtMusicScrobblePlaylistIdKey] = existing.id }
+                return existing.id
+            }
+
         val playlist = PlaylistEntity(
             name = context.getString(R.string.yt_music_scrobble_playlist_name),
             bookmarkedAt = LocalDateTime.now(),
@@ -89,6 +101,12 @@ class YtMusicScrobbler @Inject constructor(
         context.safeDataStoreEdit { it[YtMusicScrobblePlaylistIdKey] = playlist.id }
         return playlist.id
     }
+
+    private fun playlistNames(): Set<String> =
+        (listOf(Locale.ENGLISH, Locale.GERMAN).map { locale ->
+            val config = Configuration(context.resources.configuration).apply { setLocale(locale) }
+            context.createConfigurationContext(config).getString(R.string.yt_music_scrobble_playlist_name)
+        } + context.getString(R.string.yt_music_scrobble_playlist_name)).toSet()
 
     private suspend fun findSong(title: String, artist: String, durationMs: Long): SongItem? {
         val candidates = YouTube.search("$title $artist", YouTube.SearchFilter.FILTER_SONG)
