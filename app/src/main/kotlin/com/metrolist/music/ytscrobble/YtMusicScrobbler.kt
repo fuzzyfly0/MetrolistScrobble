@@ -9,6 +9,7 @@ import android.content.Context
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.music.R
+import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
 import com.metrolist.music.constants.YtMusicScrobblePlaylistIdKey
 import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.db.entities.PlaylistEntity
@@ -40,12 +41,18 @@ class YtMusicScrobbler @Inject constructor(
 
     suspend fun scrobble(title: String, artist: String, durationMs: Long) = mutex.withLock {
         withContext(Dispatchers.IO) {
-            runCatching { scrobbleLocked(title, artist, durationMs) }
+            val status = runCatching { scrobbleLocked(title, artist, durationMs) }
                 .onFailure { Timber.e(it, "YT Music scrobble failed for $title - $artist") }
+                .getOrDefault(Status.FAILED)
+            report(status, title, artist)
         }
     }
 
-    private suspend fun scrobbleLocked(title: String, artist: String, durationMs: Long) {
+    suspend fun report(status: Status, title: String, artist: String) {
+        context.safeDataStoreEdit { it[YtMusicScrobbleLastStatusKey] = "${status.name}	$title – $artist" }
+    }
+
+    private suspend fun scrobbleLocked(title: String, artist: String, durationMs: Long): Status {
         val playlistId = ensurePlaylist()
         val existing = database.playlistSongsBlocking(playlistId)
         val titleKey = normalize(title)
@@ -55,17 +62,18 @@ class YtMusicScrobbler @Inject constructor(
             normalize(entry.song.song.title) == titleKey &&
                 entry.song.artists.any { artistMatches(artistKey, it.name) }
         }
-        if (alreadyByName) return
+        if (alreadyByName) return Status.DUPLICATE
 
         val match = findSong(title, artist, durationMs) ?: run {
             Timber.i("No confident YT Music match for $title - $artist")
-            return
+            return Status.NO_MATCH
         }
-        if (existing.any { it.map.songId == match.id }) return
+        if (existing.any { it.map.songId == match.id }) return Status.DUPLICATE
 
         database.insert(match.toMediaMetadata())
-        val playlist = database.playlist(playlistId).first() ?: return
+        val playlist = database.playlist(playlistId).first() ?: return Status.FAILED
         database.addSongsToPlaylist(playlist, listOf(match.id to null))
+        return Status.ADDED
     }
 
     private suspend fun ensurePlaylist(): String {
@@ -126,6 +134,8 @@ class YtMusicScrobbler @Inject constructor(
             .replace(NON_WORD, " ")
             .replace(WHITESPACE, " ")
             .trim()
+
+    enum class Status { DETECTED, ADDED, DUPLICATE, NO_MATCH, FAILED }
 
     companion object {
         private val BRACKETS = Regex("""[(\[][^)\]]*[)\]]""")

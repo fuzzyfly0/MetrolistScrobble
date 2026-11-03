@@ -37,12 +37,14 @@ import androidx.navigation.NavController
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.R
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
+import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.Material3SettingsGroup
 import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.utils.backToMain
 import com.metrolist.music.utils.rememberPreference
 import com.metrolist.music.ytscrobble.YtMusicListenerService
+import com.metrolist.music.ytscrobble.YtMusicScrobbler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +58,18 @@ fun YtMusicScrobbleSettings(
         key = YtMusicScrobbleEnabledKey,
         defaultValue = false
     )
+
+    val lastStatus by rememberPreference(YtMusicScrobbleLastStatusKey, "")
+    val lastStatusText = lastStatus.split('	', limit = 2).takeIf { it.size == 2 }?.let { (status, track) ->
+        val res = when (runCatching { YtMusicScrobbler.Status.valueOf(status) }.getOrNull()) {
+            YtMusicScrobbler.Status.DETECTED -> R.string.yt_music_scrobble_status_detected
+            YtMusicScrobbler.Status.ADDED -> R.string.yt_music_scrobble_status_added
+            YtMusicScrobbler.Status.DUPLICATE -> R.string.yt_music_scrobble_status_duplicate
+            YtMusicScrobbler.Status.NO_MATCH -> R.string.yt_music_scrobble_status_no_match
+            YtMusicScrobbler.Status.FAILED, null -> R.string.yt_music_scrobble_status_failed
+        }
+        stringResource(res, track)
+    } ?: stringResource(R.string.yt_music_scrobble_status_none)
 
     var hasAccess by remember { mutableStateOf(YtMusicListenerService.hasNotificationAccess(context)) }
 
@@ -116,6 +130,11 @@ fun YtMusicScrobbleSettings(
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         )
                     }
+                ),
+                Material3SettingsItem(
+                    title = { Text(stringResource(R.string.yt_music_scrobble_last_activity)) },
+                    description = { Text(lastStatusText) },
+                    icon = painterResource(R.drawable.music_note),
                 ),
             )
         )

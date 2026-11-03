@@ -880,4 +880,11 @@
     <string name="yt_music_scrobble_access_granted">Erteilt</string>
     <string name="yt_music_scrobble_access_missing">Nötig, um zu sehen, was YouTube Music abspielt. Tippen zum Erlauben.</string>
     <string name="yt_music_scrobble_playlist_name">Gehört in YouTube Music</string>
+    <string name="yt_music_scrobble_last_activity">Letzte Aktivität</string>
+    <string name="yt_music_scrobble_status_none">Noch nichts erkannt. Spiele einen Song in YouTube Music ab.</string>
+    <string name="yt_music_scrobble_status_detected">Erkannt: %1$s</string>
+    <string name="yt_music_scrobble_status_added">Hinzugefügt: %1$s</string>
+    <string name="yt_music_scrobble_status_duplicate">Schon in der Playlist: %1$s</string>
+    <string name="yt_music_scrobble_status_no_match">Kein passender Song gefunden: %1$s</string>
+    <string name="yt_music_scrobble_status_failed">Konnte nicht hinzugefügt werden: %1$s</string>
 </resources>

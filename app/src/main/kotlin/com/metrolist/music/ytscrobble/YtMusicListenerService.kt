@@ -102,6 +102,7 @@ class YtMusicListenerService : NotificationListenerService() {
         val wasPlaying = tracker.playingSince != null
         pause()
         tracker.reset(title, artist, metadata.getLong(MediaMetadata.METADATA_KEY_DURATION))
+        scope.launch { scrobbler.report(YtMusicScrobbler.Status.DETECTED, title, artist) }
         if (wasPlaying) resume()
     }
 

@@ -1001,4 +1001,11 @@
     <string name="yt_music_scrobble_access_granted">Granted</string>
     <string name="yt_music_scrobble_access_missing">Required to see what YouTube Music is playing. Tap to grant.</string>
     <string name="yt_music_scrobble_playlist_name">Played in YouTube Music</string>
+    <string name="yt_music_scrobble_last_activity">Last activity</string>
+    <string name="yt_music_scrobble_status_none">Nothing detected yet. Play a song in YouTube Music.</string>
+    <string name="yt_music_scrobble_status_detected">Detected: %1$s</string>
+    <string name="yt_music_scrobble_status_added">Added: %1$s</string>
+    <string name="yt_music_scrobble_status_duplicate">Already in playlist: %1$s</string>
+    <string name="yt_music_scrobble_status_no_match">No matching song found: %1$s</string>
+    <string name="yt_music_scrobble_status_failed">Could not add: %1$s</string>
 </resources>
