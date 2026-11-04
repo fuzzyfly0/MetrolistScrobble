@@ -10,6 +10,7 @@ import android.content.res.Configuration
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.music.R
+import com.metrolist.music.constants.YtMusicScrobbleAutoDownloadKey
 import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
 import com.metrolist.music.constants.YtMusicScrobbleMaxSongsKey
 import com.metrolist.music.constants.YtMusicScrobbleNewestFirstKey
@@ -17,6 +18,7 @@ import com.metrolist.music.constants.YtMusicScrobblePlaylistIdKey
 import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.db.entities.PlaylistEntity
 import com.metrolist.music.models.toMediaMetadata
+import com.metrolist.music.playback.DownloadUtil
 import com.metrolist.music.utils.dataStore
 import com.metrolist.music.utils.safeDataStoreEdit
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,6 +42,7 @@ import kotlin.math.abs
 class YtMusicScrobbler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val database: MusicDatabase,
+    private val downloadUtil: DownloadUtil,
 ) {
     private val mutex = Mutex()
 
@@ -80,6 +83,7 @@ class YtMusicScrobbler @Inject constructor(
         val newestFirst = prefs[YtMusicScrobbleNewestFirstKey] ?: false
         database.addSongsToPlaylist(playlist, listOf(match.id to null), prepend = newestFirst)
         database.trimRecorderPlaylist(playlistId, prefs[YtMusicScrobbleMaxSongsKey] ?: 0, newestFirst)
+        if (prefs[YtMusicScrobbleAutoDownloadKey] == true) downloadUtil.download(match)
         return Status.ADDED
     }
 

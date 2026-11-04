@@ -220,6 +220,7 @@ val YtMusicScrobbleMinListenSecondsKey = intPreferencesKey("ytMusicScrobbleMinLi
 val YtMusicScrobbleSourcesKey = stringSetPreferencesKey("ytMusicScrobbleSources")
 val YtMusicScrobbleMaxSongsKey = intPreferencesKey("ytMusicScrobbleMaxSongs")
 val YtMusicScrobbleNewestFirstKey = booleanPreferencesKey("ytMusicScrobbleNewestFirst")
+val YtMusicScrobbleAutoDownloadKey = booleanPreferencesKey("ytMusicScrobbleAutoDownload")
 
 val ChipSortTypeKey = stringPreferencesKey("chipSortType")
 val SongSortTypeKey = stringPreferencesKey("songSortType")
