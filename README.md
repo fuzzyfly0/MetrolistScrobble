@@ -4,6 +4,15 @@
 > All credit for the app itself goes to the upstream project. This fork only adds one feature on top.
 > Please report issues with this feature here, not upstream.
 
+## Why
+
+The use case this fork was built for:
+
+- An Android phone with a **work profile**. YouTube Music is installed only in the work profile, where a VPN is active.
+- You want to listen to your YouTube Music songs in **Android Auto** as well, without installing YouTube Music in the personal profile.
+
+Metrolist Scrobble runs in the personal profile, notices what you play in YouTube Music in the work profile and keeps it in a local playlist that Android Auto can play. This way your listening history stays roughly in sync between both profiles, and you never have to sign in to a third-party service to record it.
+
 ## What this fork adds
 
 **Music recorder:** records what you play in the official YouTube Music app (and optionally other music apps) and adds it to a local Metrolist playlist automatically.
