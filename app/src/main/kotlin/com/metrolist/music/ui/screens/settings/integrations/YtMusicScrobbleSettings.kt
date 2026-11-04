@@ -45,8 +45,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.metrolist.music.LocalDatabase
+import com.metrolist.music.LocalDownloadUtil
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.R
+import com.metrolist.music.constants.YtMusicScrobbleAutoDownloadKey
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
 import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
 import com.metrolist.music.constants.YtMusicScrobbleMaxSongsKey
@@ -96,6 +98,17 @@ fun YtMusicScrobbleSettings(
             onNewestFirstChange(value)
             if (playlistId.isNotEmpty()) {
                 coroutineScope.launch(Dispatchers.IO) { database.reverseRecorderPlaylist(playlistId) }
+            }
+        }
+    }
+    val downloadUtil = LocalDownloadUtil.current
+    val (autoDownload, onAutoDownloadChange) = rememberPreference(YtMusicScrobbleAutoDownloadKey, false)
+    val setAutoDownload = { value: Boolean ->
+        onAutoDownloadChange(value)
+        // Catch up on the songs that were recorded before downloads were turned on.
+        if (value && playlistId.isNotEmpty()) {
+            coroutineScope.launch(Dispatchers.IO) {
+                database.playlistSongsBlocking(playlistId).forEach { downloadUtil.download(it.song) }
             }
         }
     }
@@ -323,6 +336,27 @@ fun YtMusicScrobbleSettings(
                     description = { Text(maxSongsText(maxSongs)) },
                     icon = painterResource(R.drawable.queue_music),
                     onClick = { showMaxSongsDialog = true }
+                ),
+                Material3SettingsItem(
+                    title = { Text(stringResource(R.string.yt_music_scrobble_auto_download)) },
+                    description = { Text(stringResource(R.string.yt_music_scrobble_auto_download_description)) },
+                    trailingContent = {
+                        Switch(
+                            checked = autoDownload,
+                            onCheckedChange = { setAutoDownload(it) },
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (autoDownload) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize),
+                                )
+                            }
+                        )
+                    },
+                    icon = painterResource(R.drawable.download),
+                    onClick = { setAutoDownload(!autoDownload) }
                 ),
                 Material3SettingsItem(
                     title = { Text(stringResource(R.string.yt_music_scrobble_clear)) },
