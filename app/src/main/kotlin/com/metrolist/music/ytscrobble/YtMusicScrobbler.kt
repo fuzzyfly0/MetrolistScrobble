@@ -171,8 +171,13 @@ class YtMusicScrobbler @Inject constructor(
     enum class Status { DETECTED, ADDED, DUPLICATE, NO_MATCH, FAILED }
 
     companion object {
-        // Default names from before the recorder supported apps other than YouTube Music.
-        private val LEGACY_PLAYLIST_NAMES = setOf("Played in YouTube Music", "Gehört in YouTube Music")
+        // Default names the recorder playlist had in earlier versions.
+        private val LEGACY_PLAYLIST_NAMES = setOf(
+            "Played in YouTube Music",
+            "Gehört in YouTube Music",
+            "Listening history",
+            "Hörverlauf",
+        )
         private val BRACKETS = Regex("""[(\[][^)\]]*[)\]]""")
         private val NON_WORD = Regex("""[^\p{L}\p{N} ]""")
         private val WHITESPACE = Regex("""\s+""")

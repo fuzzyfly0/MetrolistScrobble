@@ -873,13 +873,13 @@
     <string name="player_pause">Pause</string>
     <string name="top_result">Top-Ergebnis</string>
     <string name="other">Sonstiges</string>
-    <string name="yt_music_scrobble_integration">Musik-Rekorder</string>
+    <string name="yt_music_scrobble_integration">Other apps\' listening history</string>
     <string name="yt_music_scrobble_enable">Musik-Wiedergaben aufzeichnen</string>
     <string name="yt_music_scrobble_enable_description">Fügt jeden Song, den du in den ausgewählten Musik-Apps hörst, ohne Duplikate einer Playlist hinzu</string>
     <string name="yt_music_scrobble_access">Benachrichtigungszugriff</string>
     <string name="yt_music_scrobble_access_granted">Erteilt</string>
     <string name="yt_music_scrobble_access_missing">Nötig, um zu sehen, was deine Musik-Apps abspielen. Tippen zum Erlauben.</string>
-    <string name="yt_music_scrobble_playlist_name">Hörverlauf</string>
+    <string name="yt_music_scrobble_playlist_name">Played in other apps</string>
     <string name="yt_music_scrobble_min_listen">Hörzeit bis zur Aufnahme</string>
     <string name="yt_music_scrobble_min_listen_value">%1$d Sekunden (höchstens 90 %% des Songs)</string>
     <string name="yt_music_scrobble_sources">Aufzuzeichnende Apps</string>
