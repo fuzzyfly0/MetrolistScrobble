@@ -71,6 +71,9 @@ jobs:
             exit 1
           fi
           echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          # Rebuilding an older version must not take the "Latest" badge from a newer one.
+          HIGHEST=$(git ls-remote --tags --refs origin 'v*' | sed 's#.*refs/tags/##' | sort -V | tail -1)
+          echo "latest=$([ "$HIGHEST" = "$GITHUB_REF_NAME" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       # Re-pushing a tag rebuilds its release from scratch instead of piling up old assets.
       - name: Remove existing release
@@ -86,6 +89,7 @@ jobs:
           name: ${{ steps.title.outputs.version }}
           files: out/*.apk
           body_path: release-notes/${{ github.ref_name }}.md
+          make_latest: ${{ steps.title.outputs.latest }}
           fail_on_unmatched_files: true
 
       - name: Upload APK artifact
