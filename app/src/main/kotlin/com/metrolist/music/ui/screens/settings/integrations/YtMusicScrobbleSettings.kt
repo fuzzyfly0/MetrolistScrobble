@@ -50,6 +50,7 @@ import com.metrolist.music.R
 import com.metrolist.music.constants.YtMusicScrobbleEnabledKey
 import com.metrolist.music.constants.YtMusicScrobbleLastStatusKey
 import com.metrolist.music.constants.YtMusicScrobbleMaxSongsKey
+import com.metrolist.music.constants.YtMusicScrobbleNewestFirstKey
 import com.metrolist.music.constants.YtMusicScrobblePlaylistIdKey
 import com.metrolist.music.constants.YtMusicScrobbleMinListenSecondsKey
 import com.metrolist.music.constants.YtMusicScrobbleSourcesKey
@@ -62,6 +63,7 @@ import com.metrolist.music.utils.rememberPreference
 import com.metrolist.music.ytscrobble.YtMusicListenerService
 import com.metrolist.music.ytscrobble.YtMusicScrobbler
 import com.metrolist.music.ytscrobble.clearRecorderPlaylist
+import com.metrolist.music.ytscrobble.reverseRecorderPlaylist
 import com.metrolist.music.ytscrobble.trimRecorderPlaylist
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -88,6 +90,15 @@ fun YtMusicScrobbleSettings(
     val coroutineScope = rememberCoroutineScope()
     val playlistId by rememberPreference(YtMusicScrobblePlaylistIdKey, "")
     val (maxSongs, onMaxSongsChange) = rememberPreference(YtMusicScrobbleMaxSongsKey, 0)
+    val (newestFirst, onNewestFirstChange) = rememberPreference(YtMusicScrobbleNewestFirstKey, false)
+    val setNewestFirst = { value: Boolean ->
+        if (value != newestFirst) {
+            onNewestFirstChange(value)
+            if (playlistId.isNotEmpty()) {
+                coroutineScope.launch(Dispatchers.IO) { database.reverseRecorderPlaylist(playlistId) }
+            }
+        }
+    }
     var showMaxSongsDialog by rememberSaveable { mutableStateOf(false) }
     var showClearDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -185,7 +196,7 @@ fun YtMusicScrobbleSettings(
                     onClick = {
                         onMaxSongsChange(tempMax)
                         if (playlistId.isNotEmpty()) {
-                            coroutineScope.launch(Dispatchers.IO) { database.trimRecorderPlaylist(playlistId, tempMax) }
+                            coroutineScope.launch(Dispatchers.IO) { database.trimRecorderPlaylist(playlistId, tempMax, newestFirst) }
                         }
                         showMaxSongsDialog = false
                     }
@@ -278,6 +289,34 @@ fun YtMusicScrobbleSettings(
                     description = { Text(stringResource(R.string.yt_music_scrobble_min_listen_value, minListenSeconds)) },
                     icon = painterResource(R.drawable.timer),
                     onClick = { showMinListenDialog = true }
+                ),
+                Material3SettingsItem(
+                    title = { Text(stringResource(R.string.yt_music_scrobble_newest_first)) },
+                    description = {
+                        Text(
+                            stringResource(
+                                if (newestFirst) R.string.yt_music_scrobble_newest_first_on
+                                else R.string.yt_music_scrobble_newest_first_off
+                            )
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = newestFirst,
+                            onCheckedChange = { setNewestFirst(it) },
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (newestFirst) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize),
+                                )
+                            }
+                        )
+                    },
+                    icon = painterResource(R.drawable.queue_music),
+                    onClick = { setNewestFirst(!newestFirst) }
                 ),
                 Material3SettingsItem(
                     title = { Text(stringResource(R.string.yt_music_scrobble_max_songs)) },

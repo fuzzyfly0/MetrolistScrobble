@@ -889,6 +889,9 @@
     <string name="yt_music_scrobble_clear">Playlist leeren</string>
     <string name="yt_music_scrobble_clear_description">Entfernt alle aufgezeichneten Songs aus der Playlist</string>
     <string name="yt_music_scrobble_clear_confirm">Alle Songs aus der Rekorder-Playlist entfernen?</string>
+    <string name="yt_music_scrobble_newest_first">Neueste Songs oben</string>
+    <string name="yt_music_scrobble_newest_first_on">Neue Songs werden oben in die Playlist eingefügt</string>
+    <string name="yt_music_scrobble_newest_first_off">Neue Songs werden unten an die Playlist angehängt</string>
     <string name="yt_music_scrobble_last_activity">Letzte Aktivität</string>
     <string name="yt_music_scrobble_status_none">Noch nichts erkannt. Spiele einen Song in einer der ausgewählten Apps ab.</string>
     <string name="yt_music_scrobble_status_detected">Erkannt: %1$s</string>

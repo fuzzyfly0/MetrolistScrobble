@@ -1010,6 +1010,9 @@
     <string name="yt_music_scrobble_clear">Clear playlist</string>
     <string name="yt_music_scrobble_clear_description">Removes all recorded songs from the playlist</string>
     <string name="yt_music_scrobble_clear_confirm">Remove all songs from the recorder playlist?</string>
+    <string name="yt_music_scrobble_newest_first">Newest songs first</string>
+    <string name="yt_music_scrobble_newest_first_on">New songs are added at the top of the playlist</string>
+    <string name="yt_music_scrobble_newest_first_off">New songs are added at the bottom of the playlist</string>
     <string name="yt_music_scrobble_last_activity">Last activity</string>
     <string name="yt_music_scrobble_status_none">Nothing detected yet. Play a song in one of the selected apps.</string>
     <string name="yt_music_scrobble_status_detected">Detected: %1$s</string>
