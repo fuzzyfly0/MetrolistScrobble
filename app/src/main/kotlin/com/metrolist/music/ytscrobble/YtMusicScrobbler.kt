@@ -32,7 +32,7 @@ import javax.inject.Singleton
 import kotlin.math.abs
 
 /**
- * Resolves a track heard in the YouTube Music app to a YouTube Music song and appends it
+ * Resolves a track heard in one of the recorded music apps to a YouTube Music song and adds it
  * to a dedicated local playlist, skipping anything that is already in it.
  */
 @Singleton
@@ -82,7 +82,13 @@ class YtMusicScrobbler @Inject constructor(
 
     private suspend fun ensurePlaylist(): String {
         val storedId = context.dataStore.data.first()[YtMusicScrobblePlaylistIdKey]
-        if (storedId != null && database.playlist(storedId).first() != null) return storedId
+        val stored = storedId?.let { database.playlist(it).first() }
+        if (stored != null) {
+            if (stored.playlist.name in LEGACY_PLAYLIST_NAMES) {
+                database.update(stored.playlist.copy(name = context.getString(R.string.yt_music_scrobble_playlist_name)))
+            }
+            return stored.id
+        }
 
         // After a backup restore or a playlist import the stored ID is gone, so pick up an
         // existing playlist with the recorder's name (in any shipped language) instead.
@@ -108,7 +114,7 @@ class YtMusicScrobbler @Inject constructor(
         (listOf(Locale.ENGLISH, Locale.GERMAN).map { locale ->
             val config = Configuration(context.resources.configuration).apply { setLocale(locale) }
             context.createConfigurationContext(config).getString(R.string.yt_music_scrobble_playlist_name)
-        } + context.getString(R.string.yt_music_scrobble_playlist_name)).toSet()
+        } + context.getString(R.string.yt_music_scrobble_playlist_name)).toSet() + LEGACY_PLAYLIST_NAMES
 
     private suspend fun findSong(title: String, artist: String, durationMs: Long): SongItem? {
         val candidates = YouTube.search("$title $artist", YouTube.SearchFilter.FILTER_SONG)
@@ -158,6 +164,8 @@ class YtMusicScrobbler @Inject constructor(
     enum class Status { DETECTED, ADDED, DUPLICATE, NO_MATCH, FAILED }
 
     companion object {
+        // Default names from before the recorder supported apps other than YouTube Music.
+        private val LEGACY_PLAYLIST_NAMES = setOf("Played in YouTube Music", "Gehört in YouTube Music")
         private val BRACKETS = Regex("""[(\[][^)\]]*[)\]]""")
         private val NON_WORD = Regex("""[^\p{L}\p{N} ]""")
         private val WHITESPACE = Regex("""\s+""")
