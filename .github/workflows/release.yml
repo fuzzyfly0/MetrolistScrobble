@@ -65,7 +65,12 @@ jobs:
       - name: Release title
         if: startsWith(github.ref, 'refs/tags/')
         id: title
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ ! -f "release-notes/$GITHUB_REF_NAME.md" ]; then
+            echo "::error::Add release-notes/$GITHUB_REF_NAME.md before tagging"
+            exit 1
+          fi
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       # Re-pushing a tag rebuilds its release from scratch instead of piling up old assets.
       - name: Remove existing release
@@ -80,10 +85,8 @@ jobs:
         with:
           name: ${{ steps.title.outputs.version }}
           files: out/*.apk
-          body: |
-            Metrolist fork that records what you play in other music apps into a local playlist, without duplicates.
-
-            Setup instructions are in the README.
+          body_path: release-notes/${{ github.ref_name }}.md
+          fail_on_unmatched_files: true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
