@@ -18,9 +18,9 @@ Metrolist Scrobble runs in the personal profile, notices what you play in YouTub
 **Other apps' listening history:** records what you play in the official YouTube Music app (and optionally other music apps) and adds it to a local Metrolist playlist automatically.
 
 - Only counts tracks you actually listened to (30 seconds by default, adjustable in the settings); skipped tracks are ignored
-- No duplicates: a song that is already in the playlist (same video ID, or same title and artist) is not added again
+- No duplicates: a song that is already in the playlist (same video ID, or same title and artist) is not added again; when it is heard again, it moves to the newest position instead
 - No Google login and no API key needed
-- Playlist: *Played in other apps*; after a backup restore or playlist import, an existing playlist with that name is picked up again
+- Playlist: *Played in other apps* / *In anderen Apps gehört*; after a backup restore or playlist import, an existing playlist with that name is picked up again
 - New songs go to the top or the bottom of the playlist, whichever you prefer
 - Optionally downloads every recorded song so it plays offline
 - Works when YouTube Music runs in a work profile
@@ -30,7 +30,7 @@ Metrolist Scrobble runs in the personal profile, notices what you play in YouTub
 
 ## Install
 
-1. Download the APK from [Releases](https://github.com/fuzzyfly0/metrolist-scrobble/releases).
+1. Download the APK from [Releases](https://github.com/fuzzyfly0/MetrolistScrobble/releases).
 2. Install it. It runs as a separate app (*Metrolist Scrobble*, `com.metrolist.music.scrobble`) next to the official Metrolist.
 3. Open *Settings → Integrations → Other apps' listening history*, turn it on and grant notification access.
 
