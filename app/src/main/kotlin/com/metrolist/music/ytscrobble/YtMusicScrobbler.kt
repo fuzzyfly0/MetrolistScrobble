@@ -98,8 +98,10 @@ class YtMusicScrobbler @Inject constructor(
         val storedId = context.dataStore.data.first()[YtMusicScrobblePlaylistIdKey]
         val stored = storedId?.let { database.playlist(it).first() }
         if (stored != null) {
-            if (stored.playlist.name in LEGACY_PLAYLIST_NAMES) {
-                database.update(stored.playlist.copy(name = context.getString(R.string.yt_music_scrobble_playlist_name)))
+            // Keep a default name in the app's current language; a name the user chose stays.
+            val currentName = context.getString(R.string.yt_music_scrobble_playlist_name)
+            if (stored.playlist.name != currentName && stored.playlist.name in playlistNames()) {
+                database.update(stored.playlist.copy(name = currentName))
             }
             return stored.id
         }
