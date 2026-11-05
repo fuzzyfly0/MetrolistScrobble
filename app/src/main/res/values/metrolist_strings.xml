@@ -1019,6 +1019,7 @@
     <string name="yt_music_scrobble_status_none">Nothing detected yet. Play a song in one of the selected apps.</string>
     <string name="yt_music_scrobble_status_detected">Detected: %1$s</string>
     <string name="yt_music_scrobble_status_added">Added: %1$s</string>
+    <string name="yt_music_scrobble_status_moved">Heard again, moved to the newest position: %1$s</string>
     <string name="yt_music_scrobble_status_duplicate">Already in playlist: %1$s</string>
     <string name="yt_music_scrobble_status_no_match">No matching song found: %1$s</string>
     <string name="yt_music_scrobble_status_failed">Could not add: %1$s</string>

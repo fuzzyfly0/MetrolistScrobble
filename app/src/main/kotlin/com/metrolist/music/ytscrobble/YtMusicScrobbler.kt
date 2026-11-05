@@ -65,22 +65,29 @@ class YtMusicScrobbler @Inject constructor(
         val titleKey = normalize(title)
         val artistKey = normalize(artist)
 
-        val alreadyByName = existing.any { entry ->
+        val prefs = context.dataStore.data.first()
+        val newestFirst = prefs[YtMusicScrobbleNewestFirstKey] ?: false
+
+        val byName = existing.firstOrNull { entry ->
             normalize(entry.song.song.title) == titleKey &&
                 entry.song.artists.any { artistMatches(artistKey, it.name) }
         }
-        if (alreadyByName) return Status.DUPLICATE
+        if (byName != null) {
+            database.moveRecorderSongToNewest(playlistId, byName.map.songId, newestFirst)
+            return Status.MOVED
+        }
 
         val match = findSong(title, artist, durationMs) ?: run {
             Timber.i("No confident YT Music match for $title - $artist")
             return Status.NO_MATCH
         }
-        if (existing.any { it.map.songId == match.id }) return Status.DUPLICATE
+        if (existing.any { it.map.songId == match.id }) {
+            database.moveRecorderSongToNewest(playlistId, match.id, newestFirst)
+            return Status.MOVED
+        }
 
         database.insert(match.toMediaMetadata())
         val playlist = database.playlist(playlistId).first() ?: return Status.FAILED
-        val prefs = context.dataStore.data.first()
-        val newestFirst = prefs[YtMusicScrobbleNewestFirstKey] ?: false
         database.addSongsToPlaylist(playlist, listOf(match.id to null), prepend = newestFirst)
         database.trimRecorderPlaylist(playlistId, prefs[YtMusicScrobbleMaxSongsKey] ?: 0, newestFirst)
         if (prefs[YtMusicScrobbleAutoDownloadKey] == true) downloadUtil.download(match)
@@ -168,7 +175,7 @@ class YtMusicScrobbler @Inject constructor(
             .replace(WHITESPACE, " ")
             .trim()
 
-    enum class Status { DETECTED, ADDED, DUPLICATE, NO_MATCH, FAILED }
+    enum class Status { DETECTED, ADDED, MOVED, DUPLICATE, NO_MATCH, FAILED }
 
     companion object {
         // Default names the recorder playlist had in earlier versions.

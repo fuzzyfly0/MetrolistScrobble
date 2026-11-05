@@ -126,6 +126,7 @@ fun YtMusicScrobbleSettings(
         val res = when (runCatching { YtMusicScrobbler.Status.valueOf(status) }.getOrNull()) {
             YtMusicScrobbler.Status.DETECTED -> R.string.yt_music_scrobble_status_detected
             YtMusicScrobbler.Status.ADDED -> R.string.yt_music_scrobble_status_added
+            YtMusicScrobbler.Status.MOVED -> R.string.yt_music_scrobble_status_moved
             YtMusicScrobbler.Status.DUPLICATE -> R.string.yt_music_scrobble_status_duplicate
             YtMusicScrobbler.Status.NO_MATCH -> R.string.yt_music_scrobble_status_no_match
             YtMusicScrobbler.Status.FAILED, null -> R.string.yt_music_scrobble_status_failed

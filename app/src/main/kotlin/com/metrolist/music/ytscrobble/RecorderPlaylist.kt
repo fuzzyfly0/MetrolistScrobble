@@ -34,6 +34,22 @@ suspend fun MusicDatabase.reverseRecorderPlaylist(playlistId: String) {
     }
 }
 
+/**
+ * Moves a song that was heard again to where a newly recorded song would go, so the playlist
+ * order always reflects when each song was last played.
+ */
+suspend fun MusicDatabase.moveRecorderSongToNewest(playlistId: String, songId: String, newestFirst: Boolean) {
+    withTransaction {
+        val songs = playlistSongsBlocking(playlistId)
+        val target = songs.firstOrNull { it.map.songId == songId } ?: return@withTransaction
+        val others = songs - target
+        val reordered = if (newestFirst) listOf(target) + others else others + target
+        reordered.forEachIndexed { index, song ->
+            if (song.map.position != index) update(song.map.copy(position = index))
+        }
+    }
+}
+
 suspend fun MusicDatabase.clearRecorderPlaylist(playlistId: String) {
     withTransaction { clearPlaylist(playlistId) }
 }
