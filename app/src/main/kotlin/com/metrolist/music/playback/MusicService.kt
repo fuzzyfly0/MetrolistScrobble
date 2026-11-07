@@ -616,7 +616,7 @@ class MusicService :
         // On some OEMs (e.g. MIUI), even a DataStore read can be slow
         // enough to miss the window, so we promote before any I/O.
         ensureForegroundChannelExists()
-        if (!ensureStartedAsForegroundOrStop()) {
+        if (!ensureStartedAsForegroundOrKeepBound()) {
             return
         }
 
@@ -4175,13 +4175,33 @@ class MusicService :
     /**
      * [Context.startForegroundService] requires [startForeground] to succeed quickly. If we cannot
      * enter the foreground state, stop immediately so the system does not ANR the app process.
+     *
+     * The exception is the system refusing the foreground state. That happens when a media
+     * browser such as a Bluetooth car stereo (AVRCP) binds this service while the app is in the
+     * background: no startForegroundService() call is pending then, so there is nothing to ANR on,
+     * and stopping would hide the app from the car.
      */
-    private fun ensureStartedAsForegroundOrStop(): Boolean =
-        startForegroundSafely(
-            notification = createFallbackForegroundNotification(),
-            deniedMessage = "Foreground service start not allowed; stopping service to avoid ANR",
-            failureMessage = "Failed to enter foreground; stopping service to avoid ANR",
-        )
+    private fun ensureStartedAsForegroundOrKeepBound(): Boolean =
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    createFallbackForegroundNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, createFallbackForegroundNotification())
+            }
+            true
+        } catch (e: ForegroundServiceStartNotAllowedException) {
+            Timber.tag(TAG).w(e, "Started in the background by a media browser; staying bound without foreground")
+            true
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to enter foreground; stopping service to avoid ANR")
+            reportException(e)
+            stopSelf()
+            false
+        }
 
     private fun ensureForegroundWithLatestNotificationOrStop(): Boolean =
         startForegroundSafely(
