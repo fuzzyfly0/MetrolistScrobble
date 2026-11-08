@@ -190,6 +190,20 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- Needed so Bluetooth car stereos list Metrolist as a browsable media player -->
+        <activity
+            android:name=".playback.AudioFileLaunchActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".discord.DiscordOAuthActivity"
             android:exported="true"
