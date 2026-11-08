@@ -27,6 +27,7 @@ Metrolist Scrobble runs in the personal profile, notices what you play in YouTub
 - Optionally records other music apps too (Spotify, Apple Music, Amazon Music, Deezer, TIDAL, SoundCloud); the regular YouTube app is never recorded
 - Optional maximum playlist size: once it is reached, the oldest songs are removed first; the playlist can also be cleared from the settings
 - The playlist can be shown as its own entry in the Android Auto menu (*Settings → Android Auto*)
+- Shows up in the Bluetooth media menu of car stereos without Android Auto, so the library and playlists can be browsed and played from the car
 
 ## Install
 
