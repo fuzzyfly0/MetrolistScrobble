@@ -22,8 +22,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -40,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
@@ -102,6 +106,30 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.time.LocalDateTime
+
+private fun Long.toTimeString(): String {
+    val seconds = this / 1000
+    return "%d:%02d".format(seconds / 60, seconds % 60)
+}
+
+private fun parseTimeMs(input: String): Long? {
+    val trimmed = input.trim()
+    if (trimmed.isEmpty()) return null
+    val parts = trimmed.split(":")
+    return when (parts.size) {
+        2 -> {
+            val min = parts[0].toLongOrNull() ?: return null
+            val sec = parts[1].toLongOrNull() ?: return null
+            if (sec >= 60) return null
+            (min * 60 + sec) * 1000L
+        }
+        1 -> {
+            val sec = parts[0].toLongOrNull() ?: return null
+            sec * 1000L
+        }
+        else -> null
+    }
+}
 
 @Composable
 fun SongMenu(
@@ -281,6 +309,81 @@ fun SongMenu(
         mutableStateOf(false)
     }
     var isDeleting by remember { mutableStateOf(false) }
+
+    var showStartEndDialog by rememberSaveable { mutableStateOf(false) }
+    var startPointField by remember { mutableStateOf("") }
+    var endPointField by remember { mutableStateOf("") }
+
+    LaunchedEffect(showStartEndDialog) {
+        if (showStartEndDialog) {
+            startPointField = song.song.startPointMs?.toTimeString() ?: ""
+            endPointField = song.song.endPointMs?.toTimeString() ?: ""
+        }
+    }
+
+    if (showStartEndDialog) {
+        val startMs = parseTimeMs(startPointField)
+        val endMs = if (endPointField.isBlank()) null else parseTimeMs(endPointField)
+        val isValid = (startPointField.isBlank() || startMs != null) &&
+            (endPointField.isBlank() || endMs != null) &&
+            (startMs == null || endMs == null || endMs > startMs)
+
+        DefaultDialog(
+            onDismiss = { showStartEndDialog = false },
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.tune),
+                    contentDescription = null,
+                )
+            },
+            title = { Text(text = stringResource(R.string.start_end_points)) },
+            buttons = {
+                TextButton(onClick = {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        database.query { updateStartEndPoints(song.id, null, null) }
+                    }
+                    showStartEndDialog = false
+                }) {
+                    Text(text = stringResource(R.string.start_end_points_clear))
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = { showStartEndDialog = false }) {
+                    Text(text = stringResource(android.R.string.cancel))
+                }
+                TextButton(
+                    enabled = isValid,
+                    onClick = {
+                        coroutineScope.launch(Dispatchers.IO) {
+                            database.query {
+                                updateStartEndPoints(song.id, startMs, endMs)
+                            }
+                        }
+                        showStartEndDialog = false
+                    },
+                ) {
+                    Text(text = stringResource(android.R.string.ok))
+                }
+            },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = startPointField,
+                    onValueChange = { startPointField = it },
+                    label = { Text(stringResource(R.string.start_point)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = endPointField,
+                    onValueChange = { endPointField = it },
+                    label = { Text(stringResource(R.string.end_point)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
 
     if (showDeleteUploadedDialog) {
         DefaultDialog(
@@ -1094,6 +1197,31 @@ fun SongMenu(
                                 ),
                             )
                         }
+                        add(
+                            Material3MenuItemData(
+                                title = { Text(text = stringResource(R.string.start_end_points)) },
+                                description = {
+                                    val start = song.song.startPointMs
+                                    val end = song.song.endPointMs
+                                    Text(
+                                        text = when {
+                                            start != null && end != null ->
+                                                stringResource(R.string.start_end_points_active, start.toTimeString(), end.toTimeString())
+                                            start != null ->
+                                                stringResource(R.string.start_end_points_start_only, start.toTimeString())
+                                            else -> stringResource(R.string.start_end_points_desc)
+                                        },
+                                    )
+                                },
+                                icon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.tune),
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = { showStartEndDialog = true },
+                            ),
+                        )
                         add(
                             Material3MenuItemData(
                                 title = { Text(text = stringResource(R.string.refetch)) },

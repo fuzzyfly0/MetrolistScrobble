@@ -1023,4 +1023,14 @@
     <string name="yt_music_scrobble_status_duplicate">Already in playlist: %1$s</string>
     <string name="yt_music_scrobble_status_no_match">No matching song found: %1$s</string>
     <string name="yt_music_scrobble_status_failed">Could not add: %1$s</string>
+
+    <string name="start_end_points">Start / end point</string>
+    <string name="start_end_points_desc">Set where this song starts and stops playing</string>
+    <string name="start_point">Start point (mm:ss)</string>
+    <string name="end_point">End point (mm:ss, optional)</string>
+    <string name="start_end_points_active">Start/end: %1$s – %2$s</string>
+    <string name="start_end_points_start_only">Starts at: %1$s</string>
+    <string name="start_end_points_clear">Clear</string>
+    <string name="start_end_points_invalid_time">Invalid time format — use mm:ss or seconds</string>
+    <string name="start_end_points_end_before_start">End point must be after start point</string>
 </resources>

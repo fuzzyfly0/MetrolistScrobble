@@ -64,6 +64,10 @@ data class SongEntity(
     val uploadEntityId: String? = null,
     @ColumnInfo(name = "isCached", defaultValue = "0")
     val isCached: Boolean = false,
+    @ColumnInfo(name = "startPointMs", defaultValue = "NULL")
+    val startPointMs: Long? = null,
+    @ColumnInfo(name = "endPointMs", defaultValue = "NULL")
+    val endPointMs: Long? = null,
 ) {
     fun localToggleLike() =
         copy(
