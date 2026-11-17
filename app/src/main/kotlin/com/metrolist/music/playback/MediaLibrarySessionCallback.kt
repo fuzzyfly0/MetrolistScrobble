@@ -106,6 +106,8 @@ constructor(
                 .add(MediaSessionConstants.CommandToggleShuffle)
                 .add(MediaSessionConstants.CommandToggleRepeatMode)
                 .add(MediaSessionConstants.CommandAddToTargetPlaylist)
+                .add(MediaSessionConstants.CommandToggleStartPoint)
+                .add(MediaSessionConstants.CommandToggleEndPoint)
                 .build(),
             connectionResult.availablePlayerCommands,
         )
@@ -126,6 +128,8 @@ constructor(
 
             MediaSessionConstants.ACTION_TOGGLE_REPEAT_MODE -> session.player.toggleRepeatMode()
             MediaSessionConstants.ACTION_ADD_TO_TARGET_PLAYLIST -> addToTargetPlaylist()
+            MediaSessionConstants.ACTION_TOGGLE_START_POINT -> service.toggleStartEndPoint(isStart = true)
+            MediaSessionConstants.ACTION_TOGGLE_END_POINT -> service.toggleStartEndPoint(isStart = false)
         }
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }

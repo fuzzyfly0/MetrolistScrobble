@@ -39,9 +39,7 @@ import com.metrolist.music.utils.get
 import com.metrolist.music.utils.reportException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -64,7 +62,6 @@ class PlayerConnection(
         private const val TAG = "PlayerConnection"
     }
 
-    private val scope = scope
     val service = binder.service
     private val playerReadinessFlow = service.isPlayerReady
 
@@ -223,18 +220,6 @@ class PlayerConnection(
         }
 
         Timber.tag(TAG).d("PlayerConnection flow observer registered; playerReady=${playerReadinessFlow.value}")
-
-        scope.launch {
-            while (true) {
-                delay(300)
-                val p = getPlayerOrNull() ?: continue
-                if (!p.isPlaying) continue
-                val endPt = currentSong.value?.song?.endPointMs ?: continue
-                if (p.currentPosition >= endPt) {
-                    seekToNext()
-                }
-            }
-        }
     }
 
     private fun updateAttachedPlayer(newPlayer: Player) {
@@ -459,9 +444,10 @@ class PlayerConnection(
             }
 
             // Logic to mimic standard seekToPrevious behavior but with explicit callbacks
-            // If we are more than 3 seconds in, just restart the song (at its start point if set)
-            if (player.currentPosition > 3000 || !player.hasPreviousMediaItem()) {
-                player.seekTo(currentSong.value?.song?.startPointMs ?: 0)
+            // If we are more than 3 seconds past the start point, just restart the song there
+            val start = currentSong.value?.song?.startPointMs ?: 0L
+            if (player.currentPosition - start > 3000 || !player.hasPreviousMediaItem()) {
+                player.seekTo(start)
                 if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) {
                     player.prepare()
                 }
@@ -633,14 +619,6 @@ class PlayerConnection(
         currentMediaItemIndex.value = player.currentMediaItemIndex
         currentWindowIndex.value = player.getCurrentQueueIndex()
         updateCanSkipPreviousAndNext()
-
-        val songId = mediaItem?.mediaId ?: return
-        scope.launch {
-            val startPt = database.song(songId).firstOrNull()?.song?.startPointMs ?: return@launch
-            if (startPt > 0) {
-                getPlayerOrNull()?.seekTo(startPt)
-            }
-        }
     }
 
     override fun onTimelineChanged(

@@ -176,6 +176,8 @@ import com.metrolist.music.ui.component.Lyrics
 import com.metrolist.music.ui.component.PlayerSliderTrack
 import com.metrolist.music.ui.component.ResizableIconButton
 import com.metrolist.music.ui.component.SquigglySlider
+import com.metrolist.music.ui.component.StartEndMarkers
+import com.metrolist.music.ui.component.StartEndPointButton
 import com.metrolist.music.ui.component.WavySlider
 import com.metrolist.music.ui.component.rememberBottomSheetState
 import com.metrolist.music.ui.menu.PlayerMenu
@@ -1433,132 +1435,146 @@ fun BottomSheetPlayer(
 
             Spacer(Modifier.height(24.dp))
 
-            when (sliderStyle) {
-                SliderStyle.DEFAULT -> {
-                    Slider(
-                        value = (sliderPosition ?: effectivePosition).toFloat(),
-                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                        onValueChange = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition = it.toLong()
-                            }
-                        },
-                        onValueChangeFinished = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            }
-                        },
-                        enabled = !isListenTogetherGuest,
-                        colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                    )
-                }
+            val startPointMs = currentSong?.song?.startPointMs
+            val endPointMs = currentSong?.song?.endPointMs
+            val canEditStartEnd = !isListenTogetherGuest && !isCasting && currentSong?.id == mediaMetadata.id
 
-                SliderStyle.WAVY -> {
-                    if (squigglySlider) {
-                        SquigglySlider(
+            Box {
+                when (sliderStyle) {
+                    SliderStyle.DEFAULT -> {
+                        Slider(
                             value = (sliderPosition ?: effectivePosition).toFloat(),
                             valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
                             onValueChange = {
-                                sliderPosition = it.toLong()
+                                if (!isListenTogetherGuest) {
+                                    sliderPosition = it.toLong()
+                                }
                             },
                             onValueChangeFinished = {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
+                                if (!isListenTogetherGuest) {
+                                    sliderPosition?.let {
+                                        if (isCasting) {
+                                            castHandler?.seekTo(it)
+                                            lastManualSeekTime = System.currentTimeMillis()
+                                        } else {
+                                            playerConnection.player.seekTo(it)
+                                        }
+                                        position = it
                                     }
-                                    position = it
+                                    sliderPosition = null
                                 }
-                                sliderPosition = null
                             },
-                            modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
-                            isPlaying = effectiveIsPlaying,
-                        )
-                    } else {
-                        WavySlider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
-                            onValueChange = {
-                                sliderPosition = it.toLong()
-                            },
-                            onValueChangeFinished = {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            },
+                            enabled = !isListenTogetherGuest,
                             colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
                             modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                            isPlaying = effectiveIsPlaying,
                         )
                     }
-                }
 
-                SliderStyle.SLIM -> {
-                    val sliderValue = (sliderPosition ?: effectivePosition).toFloat()
-                    val sliderRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat())
-                    val sliderState = remember(sliderRange) {
-                        SliderState(value = sliderValue, trackRange = sliderRange)
-                    }
-                    sliderState.value = sliderValue
-                    Slider(
-                        state = sliderState,
-                        onValueChange = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition = it.toLong()
-                            }
-                        },
-                        onValueChangeFinished = {
-                            if (!isListenTogetherGuest) {
-                                sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
+                    SliderStyle.WAVY -> {
+                        if (squigglySlider) {
+                            SquigglySlider(
+                                value = (sliderPosition ?: effectivePosition).toFloat(),
+                                valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                                onValueChange = {
+                                    sliderPosition = it.toLong()
+                                },
+                                onValueChangeFinished = {
+                                    sliderPosition?.let {
+                                        if (isCasting) {
+                                            castHandler?.seekTo(it)
+                                            lastManualSeekTime = System.currentTimeMillis()
+                                        } else {
+                                            playerConnection.player.seekTo(it)
+                                        }
+                                        position = it
                                     }
-                                    position = it
-                                }
-                                sliderPosition = null
-                            }
-                        },
-                        enabled = !isListenTogetherGuest,
-                        thumb = { Spacer(modifier = Modifier.size(0.dp)) },
-                        track = { sliderState ->
-                            PlayerSliderTrack(
-                                sliderState = sliderState,
+                                    sliderPosition = null
+                                },
+                                modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
                                 colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
+                                isPlaying = effectiveIsPlaying,
                             )
-                        },
-                        modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
-                    )
+                        } else {
+                            WavySlider(
+                                value = (sliderPosition ?: effectivePosition).toFloat(),
+                                valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                                onValueChange = {
+                                    sliderPosition = it.toLong()
+                                },
+                                onValueChangeFinished = {
+                                    sliderPosition?.let {
+                                        if (isCasting) {
+                                            castHandler?.seekTo(it)
+                                            lastManualSeekTime = System.currentTimeMillis()
+                                        } else {
+                                            playerConnection.player.seekTo(it)
+                                        }
+                                        position = it
+                                    }
+                                    sliderPosition = null
+                                },
+                                colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
+                                modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                                isPlaying = effectiveIsPlaying,
+                            )
+                        }
+                    }
+
+                    SliderStyle.SLIM -> {
+                        val sliderValue = (sliderPosition ?: effectivePosition).toFloat()
+                        val sliderRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat())
+                        val sliderState = remember(sliderRange) {
+                            SliderState(value = sliderValue, trackRange = sliderRange)
+                        }
+                        sliderState.value = sliderValue
+                        Slider(
+                            state = sliderState,
+                            onValueChange = {
+                                if (!isListenTogetherGuest) {
+                                    sliderPosition = it.toLong()
+                                }
+                            },
+                            onValueChangeFinished = {
+                                if (!isListenTogetherGuest) {
+                                    sliderPosition?.let {
+                                        if (isCasting) {
+                                            castHandler?.seekTo(it)
+                                            lastManualSeekTime = System.currentTimeMillis()
+                                        } else {
+                                            playerConnection.player.seekTo(it)
+                                        }
+                                        position = it
+                                    }
+                                    sliderPosition = null
+                                }
+                            },
+                            enabled = !isListenTogetherGuest,
+                            thumb = { Spacer(modifier = Modifier.size(0.dp)) },
+                            track = { sliderState ->
+                                PlayerSliderTrack(
+                                    sliderState = sliderState,
+                                    colors = PlayerSliderColors.getSliderColors(textButtonColor, playerBackground, useDarkTheme),
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
+                        )
+                    }
                 }
+                StartEndMarkers(
+                    startMs = startPointMs,
+                    endMs = endPointMs,
+                    durationMs = if (duration == C.TIME_UNSET) 0L else duration,
+                    color = textButtonColor,
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .padding(horizontal = PlayerHorizontalPadding),
+                )
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -1570,7 +1586,28 @@ fun BottomSheetPlayer(
                     color = TextBackgroundColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.CenterStart),
                 )
+
+                if (canEditStartEnd) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.align(Alignment.Center),
+                    ) {
+                        StartEndPointButton(
+                            isStart = true,
+                            pointMs = startPointMs,
+                            color = TextBackgroundColor,
+                            onClick = { playerConnection.service.toggleStartEndPoint(isStart = true) },
+                        )
+                        StartEndPointButton(
+                            isStart = false,
+                            pointMs = endPointMs,
+                            color = TextBackgroundColor,
+                            onClick = { playerConnection.service.toggleStartEndPoint(isStart = false) },
+                        )
+                    }
+                }
 
                 Text(
                     text = if (duration != C.TIME_UNSET) makeTimeString(duration) else "",
@@ -1578,6 +1615,7 @@ fun BottomSheetPlayer(
                     color = TextBackgroundColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.CenterEnd),
                 )
             }
 

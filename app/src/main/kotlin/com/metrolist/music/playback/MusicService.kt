@@ -41,6 +41,7 @@ import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -407,6 +408,7 @@ class MusicService :
     private var taskCleared = false
     private var lastSavedPlayerState: PersistPlayerState? = null
     private var mediaSession: MediaLibrarySession? = null
+    private var endPointJob: Job? = null
     private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
 
     private val playerInitialized = MutableStateFlow(false)
@@ -701,7 +703,7 @@ class MusicService :
         }
         mediaSession =
             MediaLibrarySession
-                .Builder(this, player, mediaLibrarySessionCallback)
+                .Builder(this, sessionPlayer(player), mediaLibrarySessionCallback)
                 .setSessionActivity(
                     PendingIntent.getActivity(
                         this,
@@ -869,6 +871,8 @@ class MusicService :
             updateWidgetUI(player.isPlaying)
         }
 
+        currentSong.collect(scope) { updateEndPointWatcher() }
+
         combine(
             currentMediaMetadata.distinctUntilChangedBy { it?.id },
             dataStore.data.map { it[ShowLyricsKey] ?: false }.distinctUntilChanged(),
@@ -986,7 +990,7 @@ class MusicService :
                 sleepTimer?.player = newPlayer
 
                 try {
-                    mediaSession?.let { (it as MediaSession).player = newPlayer }
+                    mediaSession?.let { (it as MediaSession).player = sessionPlayer(newPlayer) }
                 } catch (e: Exception) {
                     Timber.tag(TAG).e(e, "Failed to swap player in MediaSession")
                 }
@@ -1600,6 +1604,116 @@ class MusicService :
         player.pause()
     }
 
+    // Wraps the player handed to the MediaSession so "previous" from Android Auto,
+    // the notification and Bluetooth controls honours the song's start point.
+    private fun sessionPlayer(p: Player): Player =
+        object : ForwardingPlayer(p) {
+            override fun seekToPrevious() = seekToPreviousRespectingStartPoint(p)
+        }
+
+    private fun currentStartEnd(): Pair<Long?, Long?>? {
+        val song = currentSong.value?.song ?: return null
+        if (song.id != player.currentMediaItem?.mediaId) return null
+        return song.startPointMs to song.endPointMs
+    }
+
+    fun seekToPreviousRespectingStartPoint(target: Player = player) {
+        val start = currentStartEnd()?.first ?: 0L
+        if (target.currentPosition - start > 3000 || !target.hasPreviousMediaItem()) {
+            target.seekTo(start)
+        } else {
+            target.seekToPreviousMediaItem()
+        }
+    }
+
+    fun setStartEndPoint(
+        isStart: Boolean,
+        positionMs: Long? = player.currentPosition,
+    ) {
+        val song = currentSong.value?.song ?: return
+        if (song.id != player.currentMediaItem?.mediaId) return
+        var start = if (isStart) positionMs else song.startPointMs
+        var end = if (isStart) song.endPointMs else positionMs
+        if (start != null && end != null && end <= start) {
+            if (isStart) end = null else start = null
+        }
+        scope.launch(Dispatchers.IO) {
+            database.updateStartEndPoints(song.id, start, end)
+        }
+    }
+
+    private fun startEndPointButton(isStart: Boolean): CommandButton {
+        val points = currentStartEnd()
+        val isSet = if (isStart) points?.first != null else points?.second != null
+        return CommandButton
+            .Builder()
+            .setDisplayName(
+                getString(
+                    when {
+                        isStart && isSet -> R.string.action_clear_start_point
+                        isStart -> R.string.action_set_start_point
+                        isSet -> R.string.action_clear_end_point
+                        else -> R.string.action_set_end_point
+                    },
+                ),
+            ).setIconResId(
+                when {
+                    isStart && isSet -> R.drawable.point_a_set
+                    isStart -> R.drawable.point_a
+                    isSet -> R.drawable.point_b_set
+                    else -> R.drawable.point_b
+                },
+            ).setSessionCommand(
+                MediaSessionConstants.run { if (isStart) CommandToggleStartPoint else CommandToggleEndPoint },
+            ).setEnabled(points != null)
+            .build()
+    }
+
+    fun toggleStartEndPoint(isStart: Boolean) {
+        val (start, end) = currentStartEnd() ?: return
+        val isSet = if (isStart) start != null else end != null
+        setStartEndPoint(isStart, if (isSet) null else player.currentPosition)
+    }
+
+    private fun applyStartPoint(mediaId: String) {
+        scope.launch {
+            val start = database.song(mediaId).first()?.song?.startPointMs ?: return@launch
+            if (player.currentMediaItem?.mediaId == mediaId && player.currentPosition < start) {
+                player.seekTo(start)
+            }
+        }
+    }
+
+    private fun updateEndPointWatcher() {
+        endPointJob?.cancel()
+        endPointJob = null
+        val end = currentStartEnd()?.second ?: return
+        if (!player.isPlaying) return
+        endPointJob =
+            scope.launch {
+                while (isActive) {
+                    val remaining = end - player.currentPosition
+                    if (remaining <= 0) {
+                        onEndPointReached()
+                        break
+                    }
+                    delay((remaining / player.playbackParameters.speed).toLong().coerceIn(50L, 1000L))
+                }
+            }
+    }
+
+    private fun onEndPointReached() {
+        val start = currentStartEnd()?.first ?: 0L
+        when {
+            player.repeatMode == REPEAT_MODE_ONE -> player.seekTo(start)
+            player.hasNextMediaItem() -> player.seekToNextMediaItem()
+            else -> {
+                player.pause()
+                player.seekTo(start)
+            }
+        }
+    }
+
     private fun updateNotification(isLiked: Boolean? = currentSong.value?.song?.let { if (it.isEpisode) it.inLibrary != null else it.liked }) {
         mediaSession?.setCustomLayout(
             listOf(
@@ -1643,6 +1757,8 @@ class MusicService :
                         },
                     ).setSessionCommand(CommandToggleRepeatMode)
                     .build(),
+                startEndPointButton(isStart = true),
+                startEndPointButton(isStart = false),
                 CommandButton
                     .Builder()
                     .setDisplayName(getString(R.string.start_radio))
@@ -2542,6 +2658,7 @@ class MusicService :
             }
         }
         lastTransitionedMediaId = mediaItem?.mediaId
+        mediaItem?.mediaId?.let(::applyStartPoint)
         initialBufferRecoveryJob?.cancel()
         initialBufferRecoveryJob = null
         initialBufferRecoveryAttemptedMediaId = null
@@ -2798,6 +2915,16 @@ class MusicService :
         }
         if (events.containsAny(EVENT_TIMELINE_CHANGED, EVENT_POSITION_DISCONTINUITY)) {
             currentMediaMetadata.value = player.currentMetadata
+        }
+
+        if (events.containsAny(
+                Player.EVENT_IS_PLAYING_CHANGED,
+                Player.EVENT_POSITION_DISCONTINUITY,
+                Player.EVENT_MEDIA_ITEM_TRANSITION,
+                Player.EVENT_PLAYBACK_PARAMETERS_CHANGED,
+            )
+        ) {
+            updateEndPointWatcher()
         }
 
         if (events.containsAny(Player.EVENT_IS_PLAYING_CHANGED)) {
@@ -4468,7 +4595,7 @@ class MusicService :
             }
 
             MusicWidgetReceiver.ACTION_PREVIOUS -> {
-                player.seekToPrevious()
+                seekToPreviousRespectingStartPoint(player)
                 updateWidgetUI(player.isPlaying)
             }
 
@@ -4965,7 +5092,7 @@ class MusicService :
         sleepTimer?.player = player
 
         try {
-            mediaSession?.let { (it as MediaSession).player = player }
+            mediaSession?.let { (it as MediaSession).player = sessionPlayer(player) }
         } catch (e: Exception) {
             timber.log.Timber.e(e, "Failed to swap player in MediaSession")
         }

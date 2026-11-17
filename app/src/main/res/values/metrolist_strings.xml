@@ -1033,4 +1033,8 @@
     <string name="start_end_points_clear">Clear</string>
     <string name="start_end_points_invalid_time">Invalid time format — use mm:ss or seconds</string>
     <string name="start_end_points_end_before_start">End point must be after start point</string>
+    <string name="action_set_start_point">Set start point A here</string>
+    <string name="action_clear_start_point">Clear start point A</string>
+    <string name="action_set_end_point">Set end point B here</string>
+    <string name="action_clear_end_point">Clear end point B</string>
 </resources>
