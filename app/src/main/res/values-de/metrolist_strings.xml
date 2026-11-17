@@ -902,4 +902,8 @@
     <string name="yt_music_scrobble_status_duplicate">Schon in der Playlist: %1$s</string>
     <string name="yt_music_scrobble_status_no_match">Kein passender Song gefunden: %1$s</string>
     <string name="yt_music_scrobble_status_failed">Konnte nicht hinzugefügt werden: %1$s</string>
+    <string name="action_set_start_point">Startpunkt A hier setzen</string>
+    <string name="action_clear_start_point">Startpunkt A entfernen</string>
+    <string name="action_set_end_point">Endpunkt B hier setzen</string>
+    <string name="action_clear_end_point">Endpunkt B entfernen</string>
 </resources>
