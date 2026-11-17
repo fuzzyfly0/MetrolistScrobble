@@ -29,6 +29,8 @@ Metrolist Scrobble runs in the personal profile, notices what you play in YouTub
 - The playlist can be shown as its own entry in the Android Auto menu (*Settings → Android Auto*)
 - Shows up in the Bluetooth media menu of car stereos without Android Auto, so the library and playlists can be browsed and played from the car
 
+**Start and end points:** set a start point A and an end point B per song, in the player, in Android Auto or in the media notification. The song starts at A and moves on to the next one at B, for example to skip long intros or outros.
+
 ## Install
 
 1. Download the APK from [Releases](https://github.com/fuzzyfly0/MetrolistScrobble/releases).
