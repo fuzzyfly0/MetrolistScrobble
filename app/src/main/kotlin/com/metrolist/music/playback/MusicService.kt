@@ -1715,7 +1715,8 @@ class MusicService :
     }
 
     private fun updateNotification(isLiked: Boolean? = currentSong.value?.song?.let { if (it.isEpisode) it.inLibrary != null else it.liked }) {
-        mediaSession?.setCustomLayout(
+        val session = mediaSession ?: return
+        val layout =
             listOf(
                 CommandButton
                     .Builder()
@@ -1773,8 +1774,12 @@ class MusicService :
                     .setSessionCommand(CommandAddToTargetPlaylist)
                     .setEnabled(currentSong.value != null)
                     .build(),
-            ),
-        )
+            )
+        session.setCustomLayout(layout)
+        // The session-wide setter doesn't republish the platform playback state, so Android Auto
+        // only picked up the buttons on the next player event. The per-controller call for the
+        // media notification controller does republish it.
+        session.mediaNotificationControllerInfo?.let { session.setCustomLayout(it, layout) }
     }
 
     /**
