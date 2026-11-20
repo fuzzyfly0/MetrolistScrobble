@@ -1706,7 +1706,15 @@ class MusicService :
         val start = currentStartEnd()?.first ?: 0L
         when {
             player.repeatMode == REPEAT_MODE_ONE -> player.seekTo(start)
-            player.hasNextMediaItem() -> player.seekToNextMediaItem()
+            // Same steps as the Next button: a bare seek could leave the next song unprepared
+            // and never loading, e.g. when the player had already run into an idle/ended state.
+            player.hasNextMediaItem() -> {
+                player.seekToNextMediaItem()
+                if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) {
+                    player.prepare()
+                }
+                player.playWhenReady = true
+            }
             else -> {
                 player.pause()
                 player.seekTo(start)
