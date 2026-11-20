@@ -407,6 +407,7 @@ class MusicService :
     private var crossfadeJob: Job? = null
     private var taskCleared = false
     private var startCommandReceived = false
+    private var lastCustomLayoutKey: List<List<Any?>>? = null
     private var lastSavedPlayerState: PersistPlayerState? = null
     private var mediaSession: MediaLibrarySession? = null
     private var endPointJob: Job? = null
@@ -1795,6 +1796,12 @@ class MusicService :
                     .setEnabled(currentSong.value != null)
                     .build(),
             )
+        // currentSong re-emits on every write to the song table, which happens all the time during
+        // playback. Republishing an unchanged layout makes Android Auto rebuild its screen and
+        // scroll lists back to the top, so only publish real changes.
+        val layoutKey = layout.map { listOf(it.displayName, it.iconResId, it.isEnabled, it.sessionCommand?.customAction) }
+        if (layoutKey == lastCustomLayoutKey) return
+        lastCustomLayoutKey = layoutKey
         session.setCustomLayout(layout)
         // The session-wide setter doesn't republish the platform playback state, so Android Auto
         // only picked up the buttons on the next player event. The per-controller call for the
