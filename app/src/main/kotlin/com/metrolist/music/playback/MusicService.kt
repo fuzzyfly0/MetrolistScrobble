@@ -717,6 +717,10 @@ class MusicService :
         mediaSession =
             MediaLibrarySession
                 .Builder(this, sessionPlayer(player), mediaLibrarySessionCallback)
+                // Media3 republishes the position every 3 s by default. Android Auto treats each
+                // update as a new playback state and scrolls the queue back to the current song.
+                // Controllers extrapolate the position themselves, so the updates are not needed.
+                .setPeriodicPositionUpdateEnabled(false)
                 .setSessionActivity(
                     PendingIntent.getActivity(
                         this,
