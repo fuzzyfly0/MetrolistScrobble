@@ -406,6 +406,7 @@ class MusicService :
     private var isCrossfading = false
     private var crossfadeJob: Job? = null
     private var taskCleared = false
+    private var startCommandReceived = false
     private var lastSavedPlayerState: PersistPlayerState? = null
     private var mediaSession: MediaLibrarySession? = null
     private var endPointJob: Job? = null
@@ -621,6 +622,17 @@ class MusicService :
         if (!ensureStartedAsForegroundOrKeepBound()) {
             return
         }
+        // A car stereo, Android Auto or another media browser that only binds the service would
+        // otherwise leave the empty placeholder notification behind until something plays.
+        Handler(Looper.getMainLooper()).postDelayed(
+            {
+                val placeholderOnly = latestMediaNotification == null
+                if (!startCommandReceived && placeholderOnly && !(::player.isInitialized && player.isPlaying)) {
+                    ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                }
+            },
+            BIND_ONLY_FOREGROUND_GRACE_MS,
+        )
 
         // Read ALL startup preferences in one shot so that subsequent code
         // never calls dataStore.get() (which does runBlocking internally).
@@ -4566,6 +4578,7 @@ class MusicService :
         flags: Int,
         startId: Int,
     ): Int {
+        startCommandReceived = true
         if (taskCleared) {
             // A media button press (headset, car) is the user resuming; anything else is a stale restart.
             if (intent?.action != Intent.ACTION_MEDIA_BUTTON) {
@@ -5218,6 +5231,7 @@ class MusicService :
         private const val INITIAL_BUFFER_RECOVERY_DELAY_MS = 15_000L
         private const val INITIAL_BUFFER_RECOVERY_POSITION_MS = 5_000L
         private const val TAG = "MusicService"
+        private const val BIND_ONLY_FOREGROUND_GRACE_MS = 2_000L
 
         @Volatile
         var isRunning = false
