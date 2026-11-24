@@ -3239,6 +3239,7 @@ class MusicService :
 
         if (mediaId != null && hasExceededRetryLimit(mediaId)) {
             Timber.tag(TAG).w("Song $mediaId has exceeded retry limit, skipping")
+            logPlaybackError(error, mediaId, failedStreamClient, "retry limit reached, song marked as failed")
             markSongAsFailed(mediaId)
             handleFinalFailure()
             return
@@ -3251,54 +3252,63 @@ class MusicService :
         when {
             isAudioRendererError(error) -> {
                 Timber.tag(TAG).d("AudioTrack error detected (${error.errorCode}), performing safe recovery")
+                logPlaybackError(error, mediaId, failedStreamClient, "audio output recovery")
                 handleAudioRendererError(mediaId)
                 return
             }
 
             isRangeNotSatisfiableError(error) -> {
                 Timber.tag(TAG).d("Range Not Satisfiable (416) detected, performing strict recovery")
+                logPlaybackError(error, mediaId, failedStreamClient, "range not satisfiable (416) recovery")
                 handleRangeNotSatisfiableError(mediaId)
                 return
             }
 
             isPageReloadError(error) -> {
                 Timber.tag(TAG).d("Page reload error detected, performing strict recovery")
+                logPlaybackError(error, mediaId, failedStreamClient, "page reload recovery")
                 handlePageReloadError(mediaId)
                 return
             }
 
             isExpiredUrlError(error) -> {
                 Timber.tag(TAG).d("Expired URL (403/410) detected, refreshing stream URL")
+                logPlaybackError(error, mediaId, failedStreamClient, "expired URL (403/410), refreshing stream")
                 handleExpiredUrlError(mediaId, failedStreamClient)
                 return
             }
 
             isFileNotFoundError(error) -> {
                 Timber.tag(TAG).d("Cache file missing (ENOENT) detected, refreshing stream")
+                logPlaybackError(error, mediaId, failedStreamClient, "cache file missing, refreshing stream")
                 handleFileNotFoundError(mediaId)
                 return
             }
 
             isRemotePlaybackError(error) -> {
                 Timber.tag(TAG).d("Remote playback error detected (${error.errorCode}), refreshing stream URL")
+                logPlaybackError(error, mediaId, failedStreamClient, "remote playback error, refreshing stream")
                 handleExpiredUrlError(mediaId, failedStreamClient)
                 return
             }
 
             !isNetworkConnected.value -> {
                 Timber.tag(TAG).d("No internet connection, waiting for connection")
+                logPlaybackError(error, mediaId, failedStreamClient, "no internet, waiting for connection")
                 waitOnNetworkError()
                 return
             }
 
             isNetworkRelatedError(error) -> {
                 Timber.tag(TAG).d("Network-related error detected while connected, attempting recovery")
+                logPlaybackError(error, mediaId, failedStreamClient, "network error, retrying")
                 handleGenericIOError(mediaId)
                 return
             }
 
             isStreamClientError(error) -> {
                 Timber.tag(TAG).d("Stream client error detected (${error.errorCode}), trying the next client")
+                logPlaybackError(error, mediaId, failedStreamClient, "stream client error, trying the next client")
                 handleStreamClientError(mediaId, failedStreamClient)
                 return
             }
@@ -3306,10 +3316,26 @@ class MusicService :
 
         if (dataStore.get(AutoSkipNextOnErrorKey, false)) {
             Timber.tag(TAG).d("Auto-skipping to next track due to unrecoverable error")
+            logPlaybackError(error, mediaId, failedStreamClient, "unrecoverable, skipped to next song")
             skipOnError()
         } else {
             Timber.tag(TAG).d("Stopping playback due to unrecoverable error")
+            logPlaybackError(error, mediaId, failedStreamClient, "unrecoverable, playback stopped")
             stopOnError()
+        }
+    }
+
+    private fun logPlaybackError(
+        error: PlaybackException,
+        mediaId: String?,
+        streamClient: String?,
+        recovery: String,
+    ) {
+        val metadata = player.currentMediaItem?.metadata
+        val song = metadata?.let { m -> "${m.title} - ${m.artists.joinToString { it.name }}" }
+        val connected = isNetworkConnected.value
+        scope.launch(Dispatchers.IO) {
+            PlaybackErrorLog.record(this@MusicService, error, mediaId, song, streamClient, connected, recovery)
         }
     }
 
