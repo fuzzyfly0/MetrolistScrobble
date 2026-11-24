@@ -1028,4 +1028,10 @@
     <string name="action_clear_start_point">Clear start point A</string>
     <string name="action_set_end_point">Set end point B here</string>
     <string name="action_clear_end_point">Clear end point B</string>
+    <string name="playback_error_log">Playback error log</string>
+    <string name="playback_error_log_description">Playback errors with time and song, kept in the app</string>
+    <string name="playback_error_log_empty">No playback errors recorded</string>
+    <string name="playback_error_log_share">Share</string>
+    <string name="playback_error_log_clear">Clear</string>
+    <string name="playback_error_log_clear_confirm">Delete all recorded playback errors?</string>
 </resources>

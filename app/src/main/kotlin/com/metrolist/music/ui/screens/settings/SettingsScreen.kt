@@ -155,6 +155,12 @@ fun SettingsScreen(
                     icon = painterResource(R.drawable.restore),
                     title = { Text(stringResource(R.string.backup_restore)) },
                     onClick = { navController.navigate("settings/backup_restore") }
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.bug_report),
+                    title = { Text(stringResource(R.string.playback_error_log)) },
+                    description = { Text(stringResource(R.string.playback_error_log_description)) },
+                    onClick = { navController.navigate("settings/playback_errors") }
                 )
             )
         )

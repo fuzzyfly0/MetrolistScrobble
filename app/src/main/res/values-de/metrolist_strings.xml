@@ -906,4 +906,10 @@
     <string name="action_clear_start_point">Startpunkt A entfernen</string>
     <string name="action_set_end_point">Endpunkt B hier setzen</string>
     <string name="action_clear_end_point">Endpunkt B entfernen</string>
+    <string name="playback_error_log">Wiedergabe-Fehlerprotokoll</string>
+    <string name="playback_error_log_description">Wiedergabefehler mit Uhrzeit und Song, in der App gespeichert</string>
+    <string name="playback_error_log_empty">Keine Wiedergabefehler aufgezeichnet</string>
+    <string name="playback_error_log_share">Teilen</string>
+    <string name="playback_error_log_clear">Leeren</string>
+    <string name="playback_error_log_clear_confirm">Alle aufgezeichneten Wiedergabefehler löschen?</string>
 </resources>

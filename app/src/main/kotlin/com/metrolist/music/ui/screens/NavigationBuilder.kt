@@ -61,6 +61,7 @@ import com.metrolist.music.ui.screens.settings.integrations.IntegrationScreen
 import com.metrolist.music.ui.screens.settings.integrations.LastFMSettings
 import com.metrolist.music.ui.screens.settings.integrations.ListenTogetherSettings
 import com.metrolist.music.ui.screens.settings.integrations.YtMusicScrobbleSettings
+import com.metrolist.music.ui.screens.settings.PlaybackErrorLogScreen
 
 import com.metrolist.music.ui.screens.wrapped.WrappedScreen
 import com.metrolist.music.utils.rememberEnumPreference
@@ -371,6 +372,10 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("settings/player") {
         PlayerSettings(navController)
+    }
+
+    composable("settings/playback_errors") {
+        PlaybackErrorLogScreen(navController)
     }
 
     composable("settings/storage") {
